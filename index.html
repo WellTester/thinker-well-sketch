@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Thinker</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='139.068 204.280 314.297 314.294'%3E%3Crect x='139.068' y='204.280' width='314.297' height='314.294' rx='48' fill='%2316232E'/%3E%3Cg transform='translate(751.211,-233.881) rotate(45)'%3E%3Cpath d='M170.08 813.54 L113.39 813.54 L113.39 756.85 L170.08 756.85 L170.08 813.54 ZM198.43 813.54 L198.43 756.85 L198.43 728.5 L170.08 728.5 L113.39 728.5 L113.39 671.81 L198.43 671.81 L198.43 643.46 L113.39 643.46 L85.04 643.46 L28.35 643.46 L0 643.46 L0 671.81 L0 728.5 L0 756.85 L0 841.89 L28.35 841.89 L28.35 756.85 L85.04 756.85 L85.04 813.54 L85.04 841.89 L113.39 841.89 L170.08 841.89 L198.43 841.89 L198.43 813.54 ZM28.35 728.5 L28.35 671.81 L85.04 671.81 L85.04 728.5 L28.35 728.5 Z' fill='%23E8A33D'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -401,22 +400,27 @@
       <div class="brand">THINKER<span>WELLBORE SKETCH</span></div>
     </div>
     <div style="display:flex;gap:10px;">
-      <div class="field">
-        <label>Well Name</label>
-        <input id="wellName" type="text" value="Well-1">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:10px;">
+          <div class="field">
+            <label>Well Name</label>
+            <input id="wellName" type="text" value="Well-1">
+          </div>
+          <div class="field">
+            <label>Total Depth, m MD</label>
+            <input id="totalDepth" type="number" value="3200" min="50" step="10">
+          </div>
+          <div class="field">
+            <label>Version</label>
+            <input id="csVersion" type="text" value="1.0">
+          </div>
+        </div>
+        <div class="field" style="width:100%;">
+          <label>Notes</label>
+          <input id="csNotes" type="text" placeholder="Free-text notes" style="width:100%;box-sizing:border-box;">
+        </div>
       </div>
-      <div class="field">
-        <label>Total Depth, m MD</label>
-        <input id="totalDepth" type="number" value="3200" min="50" step="10">
-      </div>
-      <div class="field">
-        <label>Version</label>
-        <input id="csVersion" type="text" value="1.0">
-      </div>
-    </div>
-    <div class="field" style="width:100%;">
-      <label>Notes</label>
-      <input id="csNotes" type="text" placeholder="Free-text notes" style="width:100%;box-sizing:border-box;">
+      <button id="openDesignsManager" class="ghost toolbar-btn" style="width:auto;align-self:stretch;margin-top:13px;">Designs Manager</button>
     </div>
   </div>
   <div class="toolbar-actions">
@@ -451,6 +455,7 @@
     <div class="btn-stack-2">
       <button id="exportSvg" class="toolbar-btn">Export SVG</button>
       <button id="exportPng" class="toolbar-btn">Export PNG</button>
+      <button id="exportReport" class="ghost toolbar-btn">Report</button>
     </div>
   </div>
 </header>
@@ -515,6 +520,40 @@
         <tbody id="tableViewTbody"></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="designsManagerOverlay" style="display:none;">
+  <div class="modal-box" style="width:720px; max-width:97vw; max-height:90vh;">
+    <div class="modal-header">
+      <h3>Designs Manager</h3>
+      <button id="closeDesignsManager" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
+    </div>
+    <div class="modal-hint">Select a design below, then act on it &mdash; or save the current working design into the list. Designs are stored locally in this browser only.</div>
+    <button id="saveCurrentToManager" class="ghost" style="width:100%;margin:10px 0;">Save Current Design to List</button>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button id="dmgrNew" class="ghost" style="width:auto;flex:1;padding:6px 8px;">New</button>
+      <button id="dmgrLoad" class="ghost" style="width:auto;flex:1;padding:6px 8px;" disabled>Load</button>
+      <button id="dmgrSave" class="ghost" style="width:auto;flex:1;padding:6px 8px;" disabled>Save</button>
+      <button id="dmgrDuplicate" class="ghost" style="width:auto;flex:1;padding:6px 8px;" disabled>Duplicate</button>
+      <button id="dmgrProperties" class="ghost" style="width:auto;flex:1;padding:6px 8px;" disabled>Properties</button>
+      <button id="dmgrDelete" class="ghost" style="width:auto;flex:1;padding:6px 8px;color:#E5484D;" disabled>Delete</button>
+    </div>
+    <div id="designsManagerList" style="max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="designPropertiesOverlay" style="display:none;">
+  <div class="modal-box" style="width:420px; max-width:95vw;">
+    <div class="modal-header">
+      <h3>Design Properties</h3>
+      <button id="closeDesignProperties" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
+    </div>
+    <div class="insp-field"><label>Well Name</label><input type="text" id="dp_wellName"></div>
+    <div class="insp-field"><label>Total Depth (m)</label><input type="number" id="dp_totalDepth" min="50" step="10"></div>
+    <div class="insp-field"><label>Version</label><input type="text" id="dp_version"></div>
+    <div class="insp-field"><label>Notes</label><input type="text" id="dp_notes" placeholder="Free-text notes"></div>
+    <button id="dp_save" class="ghost" style="width:100%;margin-top:8px;">Save Changes</button>
   </div>
 </div>
 
@@ -1346,6 +1385,7 @@
       labelAnchor: def.kind==='casing' ? 'bottom' : (typeKey==='openhole' ? 'middle' : undefined),
       hidden: false,
       innerRefId: def.kind==='annularpacker' ? null : undefined,
+      linerRefId: def.kind==='hanger' ? null : undefined,
       gun: def.kind==='perf' ? '' : undefined,
       spf: def.kind==='perf' ? '' : undefined,
       labelDx: 0,
@@ -1416,12 +1456,46 @@
   function bandKey(band){
     return `${band.outer.ownerId}:${band.outer.side}|${band.inner.ownerId}:${band.inner.side}`;
   }
+  // Computes a sealing feature's own physical radial extent (outer/inner radius, in inches) —
+  // the same geometry each type uses for its own rendering — so the volume calculator can check
+  // whether it actually sits within a given band, rather than just sharing its depth.
+  function sealingFeatureRadialRange(c){
+    if (c.kind==='packer'){
+      const hostCasing = casingAt(c.top);
+      if (!hostCasing) return null;
+      const outerR = (hostCasing.innerDiameter!=null ? hostCasing.innerDiameter : hostCasing.od)/2;
+      const hostTubing = tubingAt(c.top);
+      const innerR = hostTubing ? hostTubing.od/2 : 0;
+      return { outerR, innerR };
+    }
+    if (c.kind==='hanger'){
+      const { innerCasing, outerCasing } = hangerCasings(c.top, c.linerRefId);
+      if (!innerCasing || !outerCasing || !(outerCasing.od > innerCasing.od)) return null;
+      const outerR = (outerCasing.innerDiameter!=null ? outerCasing.innerDiameter : outerCasing.od)/2;
+      return { outerR, innerR: innerCasing.od/2 };
+    }
+    if (c.kind==='annularpacker'){
+      const { innerCasing, outerRef, outerKind } = annularOuterRef(c.top, c.innerRefId);
+      if (!innerCasing || !outerRef || !(outerRef.od > innerCasing.od)) return null;
+      const outerBoundary = outerKind==='casing' ? (outerRef.innerDiameter!=null ? outerRef.innerDiameter : outerRef.od) : outerRef.od;
+      return { outerR: outerBoundary/2, innerR: innerCasing.od/2 };
+    }
+    return null;
+  }
   // Packers, liner hangers, and annular casing packers physically seal the wellbore at their
-  // set depth — the volume calculator treats them as hard boundaries that a selected band can't
-  // extend past, even where the surrounding casing geometry itself doesn't change
-  function sealingFeatureAt(md){
-    return state.components.some(c=>
-      ['packer','hanger','annularpacker'].includes(c.kind) && Math.abs(c.top-md) < 0.5);
+  // set depth — but only within the specific annulus/bore they actually occupy. The volume
+  // calculator treats them as hard boundaries a selected band can't extend past, but only when
+  // the feature's own radial position overlaps the band being extended — a packer sealing a
+  // different annulus at the same depth shouldn't block an unrelated one.
+  function sealingFeatureAt(md, band){
+    return state.components.some(c=>{
+      if (!['packer','hanger','annularpacker'].includes(c.kind)) return false;
+      if (Math.abs(c.top-md) >= 0.5) return false;
+      if (!band) return true;
+      const range = sealingFeatureRadialRange(c);
+      if (!range) return false; // unresolved (no valid host/pair) — has no physical presence, can't block anything
+      return range.innerR < band.outer.r - 0.001 && range.outerR > band.inner.r + 0.001;
+    });
   }
   function computeVolumeBandAtClick(clickMd, radiusIn){
     const clickBand = bandAt(clickMd, radiusIn);
@@ -1436,7 +1510,7 @@
     if (idx===-1) return null;
     let lo = idx, hi = idx;
     while (lo>0){
-      if (sealingFeatureAt(sorted[lo])) break; // a seal sits right at this boundary — don't cross it
+      if (sealingFeatureAt(sorted[lo], clickBand)) break; // a seal sits right at this boundary — don't cross it
       const mid = (sorted[lo-1]+sorted[lo])/2;
       const b = bandAt(mid, radiusIn);
       if (!b || bandKey(b)!==targetKey) break;
@@ -1447,7 +1521,7 @@
       const b = bandAt(mid, radiusIn);
       if (!b || bandKey(b)!==targetKey) break;
       hi++;
-      if (sealingFeatureAt(sorted[hi])) break; // just extended into a seal — stop past this point, but keep the extension up to it
+      if (sealingFeatureAt(sorted[hi], clickBand)) break; // just extended into a seal — stop past this point, but keep the extension up to it
     }
     const top = sorted[lo], bot = sorted[hi];
     const lengthFt = (bot-top) * VOLCALC_M_TO_FT;
@@ -1658,7 +1732,18 @@
     return state.components.find(c=>c.kind==='tubing' && c.top<=md+0.001 && c.bot>=md-0.001) || null;
   }
 
-  function hangerCasings(hangerTop){
+  function hangerCasings(hangerTop, manualLinerId){
+    // if the user explicitly picked a liner, use it directly as the inner casing — no
+    // depth-based guessing needed, and the outer (hanging) casing is still auto-detected
+    // as the next bigger casing that actually covers this depth
+    if (manualLinerId!=null){
+      const manual = state.components.find(o=>o.id===manualLinerId && o.kind==='casing');
+      if (manual){
+        const covering = state.components.filter(cc=>cc.kind==='casing' && cc.id!==manual.id && cc.od>manual.od && cc.top<=hangerTop+0.001 && cc.bot>=hangerTop-0.001);
+        const outerCasing = covering.length ? covering.reduce((min,c)=> c.od<min.od?c:min, covering[0]) : null;
+        return { innerCasing: manual, outerCasing };
+      }
+    }
     // the "hung" casing is whichever casing's own top sits at/near the hanger's depth
     // (a hanger sits at the top of the string it's hanging), not just anything spanning this point
     const tolerance = 50; // meters — generous, so small mismatches between hanger and liner top still match
@@ -2172,7 +2257,7 @@
       g.appendChild(hitRect(svgNS, CENTER_X-outerHw-5, yTop-1, outerHw*2+10, ph+2));
     } else if (c.kind==='hanger'){
       const y = mdToY(c.top);
-      const { innerCasing, outerCasing } = hangerCasings(c.top);
+      const { innerCasing, outerCasing } = hangerCasings(c.top, c.linerRefId);
       const resolved = innerCasing && outerCasing && outerCasing.od > innerCasing.od;
       if (resolved){
         g.dataset.pairInner = innerCasing.id;
@@ -2580,8 +2665,14 @@
             const dMd = yToMd(y) - yToMd(startY);
             if (role==='move'){
               let nt = startTop+dMd, nb = startBot+dMd;
-              if (nt<0){ nb += -nt; nt=0; }
-              if (nb>state.totalDepth){ nt -= (nb-state.totalDepth); nb=state.totalDepth; }
+              let rangeMin = 0, rangeMax = state.totalDepth;
+              if (comp.kind==='hanger' && comp.linerRefId!=null){
+                const liner = state.components.find(o=>o.id===comp.linerRefId);
+                if (liner){ rangeMin = liner.top; rangeMax = liner.bot; }
+              }
+              if (nt<rangeMin){ nb += (rangeMin-nt); nt=rangeMin; }
+              if (nb>rangeMax){ nt -= (nb-rangeMax); nb=rangeMax; }
+              nt = Math.max(rangeMin, nt); nb = Math.min(rangeMax, nb);
               comp.top = round1(nt); comp.bot = round1(nb);
               if (comp.kind==='casing' && comp.cementTop!=null) comp.cementTop = Math.min(comp.cementTop+ (comp.top-startTop),comp.bot);
             } else if (role==='top'){
@@ -2691,11 +2782,30 @@
             </div>
           </div>
           <div class="insp-field"><label>Color</label><input type="color" id="f_vol_color" value="${vg.color||'#E8A33D'}"></div>
+          ${volumeCalcMode && currentVolGroup && currentVolGroup.id===vg.id ? `
+          <div class="insp-hint" style="margin-top:4px;">Click a band in the diagram to add it, or click an already-selected one to remove it. Click "Volume Calc" again to finish.</div>
+          ` : `
+          <button class="ghost" id="f_vol_edit" style="width:100%;margin-top:8px;">Edit Volume</button>
+          `}
         `;
         const bind = (id,evt,fn)=>{ const e=document.getElementById(id); if(e) e.addEventListener(evt,fn); };
         bind('f_vol_label','input', e=>{ vg.name = e.target.value; render({skipInspector:true}); });
         bind('f_vol_color','input', e=>{ vg.color = e.target.value; render({skipInspector:true}); });
         bind('f_vol_unit','change', e=>{ volCalcUnit = e.target.value; renderVolumeTable(); render(); });
+        bind('f_vol_edit','click', ()=>{
+          // reopen this already-finalized group for editing — pull it out of volumeGroups and
+          // make it the live currentVolGroup, so the exact same click-a-band-to-toggle
+          // interaction used when it was first created applies to it again
+          volumeGroups = volumeGroups.filter(g=>g.id!==vg.id);
+          currentVolGroup = vg;
+          volumeCalcMode = true;
+          const btn = document.getElementById('volumeCalcToggle');
+          btn.textContent = 'Volume Calc: On';
+          const wrap = document.getElementById('canvasWrap');
+          wrap.style.cursor = 'crosshair';
+          wrap.classList.add('volume-calc-active');
+          render();
+        });
         return;
       }
     }
@@ -2707,14 +2817,25 @@
     }
     el.className='';
     const isPoint = comp.kind==='packer' || comp.kind==='hanger' || comp.kind==='annularpacker' || comp.kind==='note';
+    let hangerLinerRange = null;
+    if (comp.kind==='hanger' && comp.linerRefId!=null){
+      const liner = state.components.find(o=>o.id===comp.linerRefId);
+      if (liner) hangerLinerRange = { min: liner.top, max: liner.bot };
+    }
     el.innerHTML = `
       <div class="comp-title">${comp.label}</div>
       <div class="comp-type">${TYPES[comp.type].label}</div>
       <div class="insp-field"><label>Label</label><input type="text" id="f_label" value="${comp.label}"></div>
+      ${comp.kind==='hanger' ? `
+      <div class="insp-field"><label>Depth (m)${hangerLinerRange ? ` <span style="text-transform:none;">(${hangerLinerRange.min}\u2013${hangerLinerRange.max} m)</span>` : ''}</label>
+        <input type="number" id="f_top" value="${comp.top}" step="1" ${hangerLinerRange ? `min="${hangerLinerRange.min}" max="${hangerLinerRange.max}"` : ''}>
+      </div>
+      ` : `
       <div class="insp-row">
         <div class="insp-field"><label>Top MD (m)</label><input type="number" id="f_top" value="${comp.top}" step="1"></div>
         <div class="insp-field"><label>${isPoint?'Set MD (m)':'Bottom MD (m)'}</label><input type="number" id="f_bot" value="${comp.bot}" step="1" ${isPoint?'disabled':''}></div>
       </div>
+      `}
       ${comp.kind==='perf' ? `
       <div class="insp-field"><label>Overall Height (m)</label><div class="insp-readout">${round1(comp.bot-comp.top)} m</div></div>
       <div class="insp-row">
@@ -2734,6 +2855,18 @@
         </select>
       </div>`;
       })() : ''}
+      ${comp.kind==='hanger' ? (()=>{
+        const candidates = state.components.filter(o=> o.id!==comp.id && o.kind==='casing');
+        const opts = candidates.map(o=>{
+          return `<option value="${o.id}" ${comp.linerRefId===o.id?'selected':''}>${o.label} (${o.od}", ${o.top}\u2013${o.bot} m)</option>`;
+        }).join('');
+        return `<div class="insp-field"><label>Select Liner</label>
+        <select id="f_linerRef">
+          <option value="" ${comp.linerRefId==null?'selected':''}>Auto-detect nearest</option>
+          ${opts}
+        </select>
+      </div>`;
+      })() : ''}
       ${(comp.kind==='casing' || comp.type==='openhole') ? (()=>{
         const defaultAnchor = comp.type==='openhole' ? 'middle' : 'bottom';
         const current = comp.labelAnchor || defaultAnchor;
@@ -2745,12 +2878,12 @@
         </select>
       </div>`;
       })() : ''}
-      ${comp.kind!=='perf' ? `
+      ${comp.kind!=='perf' && comp.kind!=='hanger' ? `
       <div class="insp-row">
         <div class="insp-field"><label>OD (in)</label><input type="number" id="f_od" value="${comp.od}" step="0.125"></div>
         ${(comp.kind==='casing'||comp.kind==='tubing') ? `<div class="insp-field"><label>ID (in)</label><input type="number" id="f_id" value="${comp.innerDiameter!=null?comp.innerDiameter:round1(comp.od*0.9)}" step="0.125"></div>` : `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>`}
       </div>
-      ${(comp.kind==='casing'||comp.kind==='tubing') ? `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>` : ''}` : `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>`}
+      ${(comp.kind==='casing'||comp.kind==='tubing') ? `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>` : ''}` : (comp.kind!=='hanger' ? `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>` : '')}
       ${comp.kind==='tubing' ? `
       <div class="insp-row">
         <div class="insp-field"><label>Weight (lb/ft)</label><input type="text" id="f_weight" value="${comp.weight}"></div>
@@ -2785,7 +2918,12 @@
     bind('f_top','change', e=>{
       const val = parseFloat(e.target.value)||0;
       if (isPoint){
-        comp.top = round1(Math.max(0, Math.min(val, state.totalDepth)));
+        let clampedMin = 0, clampedMax = state.totalDepth;
+        if (comp.kind==='hanger' && comp.linerRefId!=null){
+          const liner = state.components.find(o=>o.id===comp.linerRefId);
+          if (liner){ clampedMin = liner.top; clampedMax = liner.bot; }
+        }
+        comp.top = round1(Math.max(clampedMin, Math.min(val, clampedMax)));
         comp.bot = comp.top;
       } else {
         comp.top = round1(Math.max(0, Math.min(val, comp.bot-0.5)));
@@ -2797,6 +2935,15 @@
     bind('f_id','change', e=>{ comp.innerDiameter=Math.max(0.1, Math.min(parseFloat(e.target.value)||comp.od*0.9, comp.od-0.05)); render(); });
     bind('f_labelAnchor','change', e=>{ comp.labelAnchor=e.target.value; render(); });
     bind('f_innerRef','change', e=>{ comp.innerRefId = e.target.value ? parseInt(e.target.value) : null; render(); });
+    bind('f_linerRef','change', e=>{
+      const id = e.target.value ? parseInt(e.target.value) : null;
+      comp.linerRefId = id;
+      if (id!=null){
+        const liner = state.components.find(o=>o.id===id);
+        if (liner) { comp.top = liner.top; comp.bot = liner.top; }
+      }
+      render();
+    });
     bind('f_gun','input', e=>{ comp.gun=e.target.value; render({skipInspector:true}); });
     bind('f_spf','change', e=>{ comp.spf=e.target.value; render(); });
     bind('f_color','input', e=>{ comp.color=e.target.value; render({skipInspector:true}); });
@@ -3090,6 +3237,218 @@
   document.getElementById('tableViewOverlay').addEventListener('click', e=>{
     if (e.target.id==='tableViewOverlay') e.target.style.display = 'none';
   });
+
+  // Designs Manager — a locally-persisted (this browser only) list of saved designs, each
+  // described by its own Notes text, so multiple designs can be kept side by side without
+  // the user having to manage separate downloaded files. Select-then-act toolbar pattern:
+  // click a design in the list to select it, then use New/Load/Duplicate/Properties/Delete.
+  const DESIGNS_MANAGER_KEY = 'thinkerCasingDesignsManager';
+  let selectedManagerDesignId = null;
+  let currentlyLoadedManagerDesignId = null; // whichever saved design (if any) matches what's currently on the drawing area
+  function loadManagerDesigns(){
+    try {
+      const raw = localStorage.getItem(DESIGNS_MANAGER_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch(err){
+      console.error('Could not read saved designs:', err);
+      return [];
+    }
+  }
+  function saveManagerDesigns(list){
+    try {
+      localStorage.setItem(DESIGNS_MANAGER_KEY, JSON.stringify(list));
+      return true;
+    } catch(err){
+      console.error('Could not save designs list:', err);
+      alert('Could not save to the Designs Manager \u2014 your browser may be blocking local storage (e.g. private browsing mode).');
+      return false;
+    }
+  }
+  function updateDesignsManagerToolbar(){
+    const hasSelection = selectedManagerDesignId!=null;
+    ['dmgrLoad','dmgrSave','dmgrDuplicate','dmgrProperties','dmgrDelete'].forEach(id=>{
+      document.getElementById(id).disabled = !hasSelection;
+    });
+  }
+  function renderDesignsManagerList(){
+    const listEl = document.getElementById('designsManagerList');
+    const designs = loadManagerDesigns().slice().sort((a,b)=>b.savedAt-a.savedAt);
+    // drop selection if it no longer exists (e.g. after delete)
+    if (selectedManagerDesignId!=null && !designs.some(d=>d.id===selectedManagerDesignId)) selectedManagerDesignId = null;
+    if (!designs.length){
+      listEl.innerHTML = `<div style="color:var(--text-muted);text-align:center;padding:20px;">No designs saved yet. Use "Save Current Design to List" above.</div>`;
+      updateDesignsManagerToolbar();
+      return;
+    }
+    listEl.innerHTML = designs.map(d=>{
+      const dateStr = new Date(d.savedAt).toLocaleString();
+      const desc = (d.notes||'').trim();
+      const isSelected = d.id===selectedManagerDesignId;
+      const isLoaded = d.id===currentlyLoadedManagerDesignId;
+      let cardStyle = 'border:2px solid var(--border);';
+      if (isLoaded) cardStyle = 'border:2px solid #4ADE80;background:rgba(74,222,128,0.10);';
+      if (isSelected) cardStyle += 'outline:2px solid var(--accent);outline-offset:-2px;';
+      return `
+        <div class="designs-mgr-card" data-id="${d.id}" style="${cardStyle}border-radius:6px;padding:10px 12px;cursor:pointer;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div style="font-weight:700;">${d.wellName||'Untitled Well'}${d.designVersion?` <span style="font-weight:400;color:var(--text-muted);">v${d.designVersion}</span>`:''}</div>
+            ${isLoaded ? `<span style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#4ADE80;flex-shrink:0;">\u25CF Currently Open</span>` : ''}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Saved ${dateStr}</div>
+          <div style="font-size:12.5px;margin-top:8px;${desc?'':'color:var(--text-muted);font-style:italic;'}">${desc ? desc.replace(/</g,'&lt;') : 'No description (add one via Properties or the Notes field before saving).'}</div>
+        </div>
+      `;
+    }).join('');
+    listEl.querySelectorAll('.designs-mgr-card').forEach(card=>{
+      card.addEventListener('click', ()=>{
+        selectedManagerDesignId = card.dataset.id===selectedManagerDesignId ? null : card.dataset.id;
+        renderDesignsManagerList();
+      });
+    });
+    updateDesignsManagerToolbar();
+  }
+  document.getElementById('openDesignsManager').addEventListener('click', ()=>{
+    selectedManagerDesignId = currentlyLoadedManagerDesignId;
+    renderDesignsManagerList();
+    document.getElementById('designsManagerOverlay').style.display = 'flex';
+  });
+  document.getElementById('closeDesignsManager').addEventListener('click', ()=>{
+    document.getElementById('designsManagerOverlay').style.display = 'none';
+  });
+  document.getElementById('designsManagerOverlay').addEventListener('click', e=>{
+    if (e.target.id==='designsManagerOverlay') e.target.style.display = 'none';
+  });
+  function collectCurrentDesignData(){
+    return {
+      format: 'wellbore-sketch', version: 1,
+      wellName: document.getElementById('wellName').value || 'Well-1',
+      totalDepth: state.totalDepth,
+      designVersion: document.getElementById('csVersion').value || '1.0',
+      notes: document.getElementById('csNotes').value,
+      theme: currentThemeKey,
+      components: state.components,
+      volumeGroups: volumeGroups,
+    };
+  }
+  document.getElementById('saveCurrentToManager').addEventListener('click', ()=>{
+    const data = collectCurrentDesignData();
+    const entry = { id: 'd'+Date.now()+Math.random().toString(36).slice(2,7), wellName: data.wellName, notes: data.notes, designVersion: data.designVersion, savedAt: Date.now(), data };
+    const list = loadManagerDesigns();
+    list.push(entry);
+    if (saveManagerDesigns(list)){ currentlyLoadedManagerDesignId = entry.id; renderDesignsManagerList(); }
+  });
+  // New — starts a fully blank design (unlike Clear, which only empties the wellbore and
+  // leaves Well Name/Total Depth/Version/Notes as they were)
+  document.getElementById('dmgrNew').addEventListener('click', ()=>{
+    csConfirm('Start a new blank design? Any unsaved changes to the current design will be lost.', ()=>{
+      state.components = []; selectedId = null; selectedVolId = null; volumeGroups = [];
+      state.totalDepth = 3200;
+      document.getElementById('wellName').value = 'Well-1';
+      document.getElementById('totalDepth').value = 3200;
+      document.getElementById('csVersion').value = '1.0';
+      document.getElementById('csNotes').value = '';
+      currentlyLoadedManagerDesignId = null;
+      render();
+      document.getElementById('designsManagerOverlay').style.display = 'none';
+    });
+  });
+  document.getElementById('dmgrLoad').addEventListener('click', ()=>{
+    const d = loadManagerDesigns().find(x=>x.id===selectedManagerDesignId);
+    if (!d) return;
+    const data = d.data;
+    state.totalDepth = Math.max(50, parseFloat(data.totalDepth) || 3200);
+    document.getElementById('totalDepth').value = state.totalDepth;
+    document.getElementById('wellName').value = data.wellName || 'Well-1';
+    document.getElementById('csVersion').value = data.designVersion || '1.0';
+    document.getElementById('csNotes').value = data.notes || '';
+    state.components = data.components.map(c=>({labelDx:0, labelDy:0, ...c}));
+    nextId = state.components.reduce((max,c)=>Math.max(max,(c.id||0)+1),1);
+    selectedId = null; selectedVolId = null;
+    volumeGroups = Array.isArray(data.volumeGroups) ? data.volumeGroups : [];
+    currentlyLoadedManagerDesignId = d.id;
+    render();
+    document.getElementById('designsManagerOverlay').style.display = 'none';
+  });
+  // Save — overwrites the selected design in the list with whatever is currently on the
+  // canvas, in place (updating its saved timestamp), rather than creating a new list entry
+  document.getElementById('dmgrSave').addEventListener('click', ()=>{
+    const list = loadManagerDesigns();
+    const d = list.find(x=>x.id===selectedManagerDesignId);
+    if (!d) return;
+    const doSave = ()=>{
+      const data = collectCurrentDesignData();
+      d.data = data;
+      d.wellName = data.wellName;
+      d.notes = data.notes;
+      d.designVersion = data.designVersion;
+      d.savedAt = Date.now();
+      if (saveManagerDesigns(list)){
+        currentlyLoadedManagerDesignId = d.id;
+        renderDesignsManagerList();
+      }
+    };
+    if (selectedManagerDesignId !== currentlyLoadedManagerDesignId){
+      csConfirm(`"${d.wellName||'Untitled Well'}" is not the design currently open on the canvas \u2014 saving now will overwrite it with whatever is on screen right now. Continue?`, doSave);
+    } else {
+      doSave();
+    }
+  });
+  document.getElementById('dmgrDuplicate').addEventListener('click', ()=>{
+    const list = loadManagerDesigns();
+    const d = list.find(x=>x.id===selectedManagerDesignId);
+    if (!d) return;
+    const copy = JSON.parse(JSON.stringify(d));
+    copy.id = 'd'+Date.now()+Math.random().toString(36).slice(2,7);
+    copy.savedAt = Date.now();
+    copy.wellName = (d.wellName||'Untitled Well') + ' (Copy)';
+    copy.data.wellName = copy.wellName;
+    list.push(copy);
+    saveManagerDesigns(list);
+    selectedManagerDesignId = copy.id;
+    renderDesignsManagerList();
+  });
+  document.getElementById('dmgrDelete').addEventListener('click', ()=>{
+    if (selectedManagerDesignId==null) return;
+    csConfirm('Delete this saved design? This cannot be undone.', ()=>{
+      const remaining = loadManagerDesigns().filter(x=>x.id!==selectedManagerDesignId);
+      saveManagerDesigns(remaining);
+      if (currentlyLoadedManagerDesignId===selectedManagerDesignId) currentlyLoadedManagerDesignId = null;
+      selectedManagerDesignId = null;
+      renderDesignsManagerList();
+    });
+  });
+  // Properties — edit a selected design's metadata (Well Name/Total Depth/Version/Notes)
+  // without loading it into the working canvas
+  document.getElementById('dmgrProperties').addEventListener('click', ()=>{
+    const d = loadManagerDesigns().find(x=>x.id===selectedManagerDesignId);
+    if (!d) return;
+    document.getElementById('dp_wellName').value = d.data.wellName || '';
+    document.getElementById('dp_totalDepth').value = d.data.totalDepth || 3200;
+    document.getElementById('dp_version').value = d.data.designVersion || '1.0';
+    document.getElementById('dp_notes').value = d.data.notes || '';
+    document.getElementById('designPropertiesOverlay').style.display = 'flex';
+  });
+  document.getElementById('closeDesignProperties').addEventListener('click', ()=>{
+    document.getElementById('designPropertiesOverlay').style.display = 'none';
+  });
+  document.getElementById('designPropertiesOverlay').addEventListener('click', e=>{
+    if (e.target.id==='designPropertiesOverlay') e.target.style.display = 'none';
+  });
+  document.getElementById('dp_save').addEventListener('click', ()=>{
+    const list = loadManagerDesigns();
+    const d = list.find(x=>x.id===selectedManagerDesignId);
+    if (!d) return;
+    const newWellName = document.getElementById('dp_wellName').value || 'Well-1';
+    const newTotalDepth = Math.max(50, parseFloat(document.getElementById('dp_totalDepth').value) || 3200);
+    const newVersion = document.getElementById('dp_version').value || '1.0';
+    const newNotes = document.getElementById('dp_notes').value;
+    d.wellName = newWellName; d.notes = newNotes; d.designVersion = newVersion;
+    d.data.wellName = newWellName; d.data.totalDepth = newTotalDepth; d.data.designVersion = newVersion; d.data.notes = newNotes;
+    saveManagerDesigns(list);
+    document.getElementById('designPropertiesOverlay').style.display = 'none';
+    renderDesignsManagerList();
+  });
   document.getElementById('openVolumeTable').addEventListener('click', ()=>{
     document.getElementById('volumeTableUnitSelect').value = volCalcUnit;
     renderVolumeTable();
@@ -3230,6 +3589,7 @@
 
   document.getElementById('exportSvg').addEventListener('click', exportSvg);
   document.getElementById('exportPng').addEventListener('click', exportPng);
+  document.getElementById('exportReport').addEventListener('click', generateReport);
   document.getElementById('saveDesign').addEventListener('click', saveDesign);
   document.getElementById('loadDesign').addEventListener('click', ()=>{
     document.getElementById('loadDesignFile').click();
@@ -3433,6 +3793,226 @@
     } catch(err){
       console.error('PNG export failed:', err);
       alert('PNG export failed: ' + err.message + '\n\nTry "Export SVG" instead.');
+    }
+  }
+
+  // Gathers a per-section bill of materials. Casings sharing the same spec (OD/weight/grade)
+  // are combined into one group regardless of which individual string they came from — that's
+  // the primary grouping, since that's what determines what actually gets ordered together.
+  // Each group is then named after the open hole it was run into (matched by the hole's own
+  // bottom lining up with a casing's setting depth), matching how drilling programs are
+  // organized, rather than the casing's own arbitrary label.
+  // Groups casings using the same explicit Section # assignment as Table View (rather than
+  // guessing from depth/spec), and names each section by combining that number with whichever
+  // Open Hole shares the same section — "Section 2 - 12.25" Hole" — matching how Table View
+  // itself already organizes and labels sections.
+  function buildCasingReportSections(){
+    const casings = state.components.filter(c=>c.kind==='casing');
+    const hangersByHost = new Map();
+    state.components.filter(c=>c.kind==='hanger').forEach(h=>{
+      const { innerCasing } = hangerCasings(h.top, h.linerRefId);
+      if (innerCasing){
+        if (!hangersByHost.has(innerCasing.id)) hangersByHost.set(innerCasing.id, []);
+        hangersByHost.get(innerCasing.id).push(h);
+      }
+    });
+    const packersByHost = new Map();
+    state.components.filter(c=>c.kind==='packer').forEach(p=>{
+      const host = casingAt(p.top);
+      if (host){
+        if (!packersByHost.has(host.id)) packersByHost.set(host.id, []);
+        packersByHost.get(host.id).push(p);
+      }
+    });
+    const annularPackersByHost = new Map();
+    state.components.filter(c=>c.kind==='annularpacker').forEach(ap=>{
+      const { innerCasing } = annularOuterRef(ap.top, ap.innerRefId);
+      if (innerCasing){
+        if (!annularPackersByHost.has(innerCasing.id)) annularPackersByHost.set(innerCasing.id, []);
+        annularPackersByHost.get(innerCasing.id).push(ap);
+      }
+    });
+    // Open Hole components carry the same generic sectionNumber field, so the hole size for
+    // a given section is just whichever Open Hole shares that number
+    const openHolesBySection = new Map();
+    state.components.filter(c=>c.kind==='openhole').forEach(oh=>{
+      const key = oh.sectionNumber!=null ? String(oh.sectionNumber) : 'none';
+      if (!openHolesBySection.has(key)) openHolesBySection.set(key, []);
+      openHolesBySection.get(key).push(oh);
+    });
+
+    // primary grouping: by explicit section number (matching Table View)
+    const bySectionMap = new Map();
+    casings.forEach(c=>{
+      const key = c.sectionNumber!=null ? String(c.sectionNumber) : 'none';
+      if (!bySectionMap.has(key)) bySectionMap.set(key, { sectionNumber: c.sectionNumber, casings: [] });
+      bySectionMap.get(key).casings.push(c);
+    });
+
+    const sections = Array.from(bySectionMap.values()).map(sec=>{
+      // secondary grouping within this section: combine casings sharing the same spec
+      const specGroupsMap = new Map();
+      sec.casings.forEach(c=>{
+        const key = `${c.od}|${c.weight}|${c.grade}`;
+        if (!specGroupsMap.has(key)) specGroupsMap.set(key, { od:c.od, weight:c.weight, grade:c.grade, innerDiameter:c.innerDiameter, length:0, casings: [] });
+        const g = specGroupsMap.get(key);
+        g.length += (c.bot-c.top);
+        g.casings.push(c);
+      });
+      const specGroups = Array.from(specGroupsMap.values());
+
+      const sectionKey = sec.sectionNumber!=null ? String(sec.sectionNumber) : 'none';
+      const holes = openHolesBySection.get(sectionKey) || [];
+      const holeSizes = [...new Set(holes.map(h=>h.od))];
+      let holeLabel;
+      if (holeSizes.length===1) holeLabel = `${holeSizes[0]}" Hole`;
+      else if (holeSizes.length>1) holeLabel = `${Math.max(...holeSizes)}\u2013${Math.min(...holeSizes)}" Hole`;
+      else {
+        const maxOd = Math.max(...sec.casings.map(c=>c.od));
+        holeLabel = `${round1(maxOd + 3.2)}" Hole (est.)`;
+      }
+      const name = sec.sectionNumber!=null ? `Section ${sec.sectionNumber} \u2013 ${holeLabel}` : holeLabel;
+
+      const hangers = [], packers = [], annularPackers = [];
+      sec.casings.forEach(c=>{
+        (hangersByHost.get(c.id)||[]).forEach(h=>hangers.push(h));
+        (packersByHost.get(c.id)||[]).forEach(p=>packers.push(p));
+        (annularPackersByHost.get(c.id)||[]).forEach(ap=>annularPackers.push(ap));
+      });
+      const minTop = Math.min(...sec.casings.map(c=>c.top));
+      return { name, specGroups, hangers, packers, annularPackers, minTop };
+    });
+    sections.sort((a,b)=>a.minTop-b.minTop);
+    return sections;
+  }
+  function generateReport(){
+    const svg = document.querySelector('#svgHost svg');
+    if (!svg) { alert('Nothing to report on yet — add some components first.'); return; }
+    const wellName = document.getElementById('wellName')?.value || 'Untitled Well';
+    const versionStr = document.getElementById('csVersion')?.value || '';
+    const dateStr = new Date().toLocaleDateString();
+    const sections = buildCasingReportSections();
+
+    const M_TO_FT = 3.28084;
+    const LB_TO_TONNE = 0.00045359237;
+    function weightFor(g){
+      const weightNum = parseFloat(g.weight);
+      const lengthM = round1(g.length);
+      const hasWeight = g.weight && !isNaN(weightNum);
+      const totalTonnes = hasWeight ? lengthM * M_TO_FT * weightNum * LB_TO_TONNE : null;
+      return totalTonnes!=null ? totalTonnes.toFixed(2)+' t' : 'TBD';
+    }
+    let bomHtml = '';
+    let rowNum = 0;
+    sections.forEach(sec=>{
+      bomHtml += `<tr><td colspan="6" class="print-section-header">${sec.name}</td></tr>`;
+      sec.specGroups.forEach(g=>{
+        rowNum++;
+        const weightNum = parseFloat(g.weight);
+        const weightDisplay = (g.weight && !isNaN(weightNum)) ? `${weightNum} ppf` : (g.weight||'TBD');
+        bomHtml += `<tr>
+          <td>${rowNum}</td><td>Casing</td><td>${g.od}" Casing</td>
+          <td>${g.od}" OD / ${g.innerDiameter!=null?g.innerDiameter:''}" ID, ${weightDisplay}, ${g.grade||'TBD'}</td>
+          <td>${round1(g.length)} m</td><td>${weightFor(g)}</td>
+        </tr>`;
+      });
+      sec.hangers.forEach(h=>{
+        rowNum++;
+        bomHtml += `<tr>
+          <td>${rowNum}</td><td>Liner Hanger</td><td>${h.label}</td>
+          <td>${h.manufacturer||''} ${h.model||''}</td>
+          <td>1 pcs</td><td>\u2014</td>
+        </tr>`;
+      });
+      sec.packers.forEach(p=>{
+        rowNum++;
+        bomHtml += `<tr>
+          <td>${rowNum}</td><td>Packer</td><td>${p.label}</td>
+          <td>${p.manufacturer||''} ${p.model||''}</td>
+          <td>1 pcs</td><td>\u2014</td>
+        </tr>`;
+      });
+      sec.annularPackers.forEach(ap=>{
+        rowNum++;
+        bomHtml += `<tr>
+          <td>${rowNum}</td><td>Annular Casing Packer</td><td>${ap.label}</td>
+          <td>${ap.manufacturer||''} ${ap.model||''}</td>
+          <td>1 pcs</td><td>\u2014</td>
+        </tr>`;
+      });
+    });
+    if (!sections.length) bomHtml = `<tr><td colspan="6" style="text-align:center;">No casing strings in this design.</td></tr>`;
+
+    const notesText = document.getElementById('csNotes')?.value || '';
+
+    const bounds = computeExportBounds(svg);
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    clone.setAttribute('width', bounds.width);
+    clone.setAttribute('height', bounds.height);
+    clone.setAttribute('viewBox', `${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`);
+    styleInline(clone, bounds);
+    const svgSrc = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([svgSrc], {type:'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      canvas.width = bounds.width*2; canvas.height = bounds.height*2;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = BG_THEMES[currentThemeKey].canvasBg;
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.scale(2,2);
+      ctx.drawImage(img,0,0);
+      const pngDataUrl = canvas.toDataURL('image/png');
+      URL.revokeObjectURL(url);
+      openReportWindow(pngDataUrl);
+    };
+    img.onerror = function(){
+      URL.revokeObjectURL(url);
+      alert('Report generation failed \u2014 the schematic image could not be prepared. This can happen in some browsers when opening the file directly from disk.');
+    };
+    img.src = url;
+
+    function openReportWindow(pngDataUrl){
+      const printHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Casing Design Report - ${wellName}</title>
+        <style>
+          @page{margin:10mm;}
+          body{font-family:Arial,Helvetica,sans-serif;padding:0;margin:0;color:#000;}
+          h1{margin:0 0 4px;font-size:20px;}
+          h2{margin:16px 0 6px;font-size:16px;border-bottom:2px solid #333;padding-bottom:4px;}
+          .print-meta{color:#555;font-size:12px;margin-bottom:10px;}
+          .schematic-wrap{text-align:center;margin:8px 0;}
+          .schematic-wrap img{max-width:100%;max-height:800px;}
+          table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+          th,td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top;}
+          th{background:#eee;}
+          .print-section-header{font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:0.05em;background:#ddd;}
+          .notes-block{white-space:pre-wrap;border:1px solid #999;padding:8px 10px;font-size:12px;background:#fafafa;max-height:120px;overflow:hidden;}
+          .page-break{page-break-before:always;break-before:page;}
+          @media print { .no-print{display:none;} }
+        </style></head><body>
+        <div style="padding:14px 18px;">
+        <h1 style="margin:0 0 4px;">Casing Design Report</h1>
+        <div class="print-meta">${wellName}${versionStr?` \u2014 v${versionStr}`:''} \u2014 ${dateStr}</div>
+        ${notesText ? `<h2>Notes</h2><div class="notes-block">${notesText.replace(/</g,'&lt;')}</div>` : ''}
+        <h2>Casing Design</h2>
+        <div class="schematic-wrap"><img src="${pngDataUrl}" alt="Casing design schematic" style="max-height:${notesText ? 750 : 800}px;"></div>
+        <h2 class="page-break">Bill of Materials</h2>
+        <table>
+          <thead><tr><th>#</th><th>Type</th><th>Label</th><th>Spec</th><th>Quantity</th><th>Weight</th></tr></thead>
+          <tbody>${bomHtml}</tbody>
+        </table>
+        </div>
+        <script>window.onload = () => { window.print(); };<\/script>
+        </body></html>`;
+      const printWin = window.open('', '_blank');
+      if (!printWin){
+        alert('Your browser blocked the report window from opening. Please allow pop-ups for this page and try again.');
+        return;
+      }
+      printWin.document.write(printHtml);
+      printWin.document.close();
     }
   }
 
