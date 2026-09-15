@@ -80,7 +80,7 @@
     font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);
     width:46px;text-align:center;cursor:pointer;user-select:none;
   }
-  .undo-redo-controls{display:flex;gap:2px;}
+  .undo-redo-controls{display:flex;gap:2px;justify-content:center;}
   .undo-redo-controls button{
     padding:5px 9px;border:1px solid var(--border);background:transparent;
     font-size:15px;line-height:1;border-radius:4px;color:var(--text);
@@ -104,6 +104,14 @@
 
   /* ---- Main layout ---- */
   .main{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;}
+
+  /* Action panel - left-side column of toolbar buttons, separate from the component palette */
+  .action-panel{
+    width:170px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+    padding:14px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;
+  }
+  .action-panel .toolbar-btn{width:100%;}
+  .action-panel .separator{border:none;border-top:1px solid var(--border);margin:4px 0;width:100%;}
 
   /* Palette */
   .palette{
@@ -394,14 +402,14 @@
 
 <div id="casingSheet">
 <header id="casingHeader" style="align-items:flex-start;">
-  <div style="display:flex;flex-direction:column;gap:6px;">
+  <div style="display:flex;flex-direction:row;gap:20px;align-items:flex-start;">
     <div style="display:flex;align-items:center;gap:10px;">
       <svg class="brand-logo" viewBox="139.068 204.280 314.297 314.294" xmlns="http://www.w3.org/2000/svg">
         <g><g transform="translate(751.211,-233.881) rotate(45)">
           <path d="M170.08 813.54 L113.39 813.54 L113.39 756.85 L170.08 756.85 L170.08 813.54 ZM198.43 813.54 L198.43 756.85 L198.43 728.5 L170.08 728.5 L113.39 728.5 L113.39 671.81 L198.43 671.81 L198.43 643.46 L113.39 643.46 L85.04 643.46 L28.35 643.46 L0 643.46 L0 671.81 L0 728.5 L0 756.85 L0 841.89 L28.35 841.89 L28.35 756.85 L85.04 756.85 L85.04 813.54 L85.04 841.89 L113.39 841.89 L170.08 841.89 L198.43 841.89 L198.43 813.54 ZM28.35 728.5 L28.35 671.81 L85.04 671.81 L85.04 728.5 L28.35 728.5 Z" fill="currentColor"/>
         </g></g>
       </svg>
-      <div class="brand">THINKER<span>WELLBORE SKETCH</span></div>
+      <div class="brand">THINKER<span>WELLBORE<br>SKETCH</span></div>
     </div>
     <div style="display:flex;gap:10px;">
       <div style="display:flex;flex-direction:column;gap:6px;">
@@ -432,40 +440,16 @@
     </div>
   </div>
   <div class="toolbar-actions">
-    <div class="undo-redo-controls">
-      <button id="undoBtn" title="Undo (Ctrl+Z)" disabled>&#8630;</button>
-      <button id="redoBtn" title="Redo (Ctrl+Shift+Z)" disabled>&#8631;</button>
-    </div>
-    <div class="bg-swatches" id="bgSwatches"></div>
     <div style="display:flex;flex-direction:column;gap:6px;">
-      <button id="splitScaleToggle" class="ghost toolbar-btn" style="width:140px;" title="Compress the shallow zone and expand the deeper zone for detail">Split Scale: Off</button>
-      <button id="volumeCalcToggle" class="ghost toolbar-btn" style="width:140px;" title="Click a band in the diagram to measure its volume">Volume Calc: Off</button>
       <div class="zoom-controls">
         <button id="zoomOut" title="Zoom out">&minus;</button>
         <span class="zoom-label" id="zoomLabel" title="Reset zoom">100%</span>
         <button id="zoomIn" title="Zoom in">&plus;</button>
       </div>
-    </div>
-    <div class="btn-stack-2">
-      <button id="loadDesign" class="ghost toolbar-btn">Load Project</button>
-      <button id="saveDesign" class="ghost toolbar-btn">Save Project</button>
-      <button id="clearAll" class="ghost toolbar-btn">New Project</button>
-      <input type="file" id="loadDesignFile" accept="application/json,.json" style="display:none">
-    </div>
-    <div class="btn-stack-2">
-      <button id="openCatalog" class="ghost toolbar-btn" style="width:130px;">Casing Catalog</button>
-      <button id="openCementVolume" class="ghost toolbar-btn" style="width:130px;">Cement Volume</button>
-      <button id="openTestingZones" class="ghost toolbar-btn" style="width:130px;">Testing Zones</button>
-    </div>
-    <div class="btn-stack-2">
-      <button id="openTableView" class="ghost toolbar-btn" style="width:130px;">Table View</button>
-      <button id="openVolumeTable" class="ghost toolbar-btn" style="width:130px;">Volume Table</button>
-      <button id="openGeology" class="ghost toolbar-btn" style="width:130px;">Geology</button>
-    </div>
-    <div class="btn-stack-2">
-      <button id="exportSvg" class="toolbar-btn">Export SVG</button>
-      <button id="exportPng" class="toolbar-btn">Export PNG</button>
-      <button id="exportReport" class="ghost toolbar-btn">Report</button>
+      <div class="undo-redo-controls">
+        <button id="undoBtn" title="Undo (Ctrl+Z)" disabled>&#8630;</button>
+        <button id="redoBtn" title="Redo (Ctrl+Shift+Z)" disabled>&#8631;</button>
+      </div>
     </div>
   </div>
 </header>
@@ -668,6 +652,26 @@
 </div>
 
 <div class="main">
+  <div class="action-panel" id="actionPanel">
+    <button id="loadDesign" class="ghost toolbar-btn">Load Project</button>
+    <button id="saveDesign" class="ghost toolbar-btn">Save Project</button>
+    <button id="clearAll" class="ghost toolbar-btn">New Project</button>
+    <input type="file" id="loadDesignFile" accept="application/json,.json" style="display:none">
+    <hr class="separator">
+    <button id="openCatalog" class="ghost toolbar-btn">Casing Catalog</button>
+    <button id="openCementVolume" class="ghost toolbar-btn">Cement Volume</button>
+    <button id="openTestingZones" class="ghost toolbar-btn">Testing Zones</button>
+    <button id="openTableView" class="ghost toolbar-btn">Table View</button>
+    <button id="openVolumeTable" class="ghost toolbar-btn">Volume Table</button>
+    <button id="openGeology" class="ghost toolbar-btn">Geology</button>
+    <hr class="separator">
+    <button id="exportSvg" class="toolbar-btn">Export SVG</button>
+    <button id="exportPng" class="toolbar-btn">Export PNG</button>
+    <button id="exportReport" class="ghost toolbar-btn">Report</button>
+    <hr class="separator">
+    <button id="splitScaleToggle" class="ghost toolbar-btn" title="Compress the shallow zone and expand the deeper zone for detail">Split Scale: Off</button>
+    <button id="volumeCalcToggle" class="ghost toolbar-btn" title="Click a band in the diagram to measure its volume">Volume Calc: Off</button>
+  </div>
   <div class="palette" id="palette">
     <!-- chips injected by JS, grouped by category -->
   </div>
@@ -1156,7 +1160,7 @@
   const MARGIN_TOP = 26;
   const MARGIN_BOT = 26;
   const RULER_W = 70;
-  const GEOLOGY_COL_W = 90; // width reserved for the Stratigraphic column, when formations exist
+  const GEOLOGY_COL_W = 60; // width reserved for the Stratigraphic column, when formations exist
   let CENTER_X = RULER_W + 260;
   const PX_PER_IN = 7.2; // half-width scale: halfWidthPx = od * PX_PER_IN / 2
   let SVG_H = 780;
@@ -3507,6 +3511,7 @@
   }
   function renderSwatches(){
     const host = document.getElementById('bgSwatches');
+    if (!host) return; // background theme selector UI was removed
     host.innerHTML = '';
     Object.entries(BG_THEMES).forEach(([key, t])=>{
       const btn = document.createElement('button');
