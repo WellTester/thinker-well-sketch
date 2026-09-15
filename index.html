@@ -57,7 +57,7 @@
   .brand-logo{width:32px;height:32px;flex-shrink:0;color:var(--accent);}
   header .field{display:flex;flex-direction:column;gap:2px;}
   header label{font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);}
-  header input{
+  header input, header select{
     background:var(--panel-2);border:1px solid var(--border);color:var(--text);
     padding:5px 8px;border-radius:4px;font-family:var(--font-mono);font-size:13px;width:120px;
   }
@@ -275,6 +275,10 @@
   .modal-table button.danger-btn.ghost{margin-left:4px;}
   .modal-table-wrap{overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:6px;}
   .modal-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--font-mono);}
+  .table-drag-row.table-drag-dragging{opacity:0.4;}
+  .table-drag-row.table-drag-over-top{box-shadow:inset 0 2px 0 0 var(--accent);}
+  .table-drag-row.table-drag-over-bottom{box-shadow:inset 0 -2px 0 0 var(--accent);}
+  .table-drag-handle:active{cursor:grabbing;}
   .table-cell-input{
     background:var(--panel-2);border:1px solid var(--border);border-radius:3px;
     color:var(--text);font-family:var(--font-mono);font-size:12px;padding:3px 5px;
@@ -414,6 +418,10 @@
             <label>Version</label>
             <input id="csVersion" type="text" value="1.0">
           </div>
+          <div class="field">
+            <label>Select Design</label>
+            <select id="designSwitcher" style="width:160px;"></select>
+          </div>
         </div>
         <div class="field" style="width:100%;">
           <label>Notes</label>
@@ -439,18 +447,20 @@
       </div>
     </div>
     <div class="btn-stack-2">
-      <button id="loadDesign" class="ghost toolbar-btn">Load Design</button>
-      <button id="saveDesign" class="ghost toolbar-btn">Save Design</button>
-      <button id="clearAll" class="ghost toolbar-btn">Clear</button>
+      <button id="loadDesign" class="ghost toolbar-btn">Load Project</button>
+      <button id="saveDesign" class="ghost toolbar-btn">Save Project</button>
+      <button id="clearAll" class="ghost toolbar-btn">New Project</button>
       <input type="file" id="loadDesignFile" accept="application/json,.json" style="display:none">
     </div>
     <div class="btn-stack-2">
       <button id="openCatalog" class="ghost toolbar-btn" style="width:130px;">Casing Catalog</button>
       <button id="openCementVolume" class="ghost toolbar-btn" style="width:130px;">Cement Volume</button>
+      <button id="openTestingZones" class="ghost toolbar-btn" style="width:130px;">Testing Zones</button>
     </div>
     <div class="btn-stack-2">
       <button id="openTableView" class="ghost toolbar-btn" style="width:130px;">Table View</button>
       <button id="openVolumeTable" class="ghost toolbar-btn" style="width:130px;">Volume Table</button>
+      <button id="openGeology" class="ghost toolbar-btn" style="width:130px;">Geology</button>
     </div>
     <div class="btn-stack-2">
       <button id="exportSvg" class="toolbar-btn">Export SVG</button>
@@ -511,12 +521,12 @@
 <div class="modal-overlay" id="tableViewOverlay" style="display:none;">
   <div class="modal-box" style="width:1200px; max-width:97vw; max-height:90vh;">
     <div class="modal-header">
-      <h3>Casing Design Components</h3>
+      <h3>Well Design Components</h3>
       <button id="closeTableView" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
     </div>
     <div class="modal-table-wrap" style="max-height:70vh;">
       <table class="modal-table" id="tableViewTable">
-        <thead><tr><th>#</th><th>Section #</th><th>Label</th><th>Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Length (m)</th><th>OD (in)</th><th>ID (in)</th><th>Weight</th><th>Grade</th><th>Cemented</th></tr></thead>
+        <thead><tr><th>#</th><th>Section #</th><th>Label</th><th>Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Length (m)</th><th>OD (in)</th><th>ID (in)</th><th>Weight</th><th>Grade</th><th>Cemented</th><th>Visible</th><th>Reorder</th></tr></thead>
         <tbody id="tableViewTbody"></tbody>
       </table>
     </div>
@@ -575,6 +585,40 @@
       <table class="modal-table" id="volumeTableTable">
         <thead><tr><th>#</th><th>Name</th><th>Color</th><th>Top (m)</th><th>Bottom (m)</th><th>Bands</th><th id="volumeTableVolHeader">Volume (bbl)</th><th></th></tr></thead>
         <tbody id="volumeTableTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="geologyOverlay" style="display:none;">
+  <div class="modal-box" style="width:700px; max-width:97vw; max-height:90vh;">
+    <div class="modal-header">
+      <h3>Geology</h3>
+      <button id="closeGeology" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
+    </div>
+    <div class="modal-hint">Formation tops shown as a column alongside the wellbore schematic. Depths in MD, m.</div>
+    <button id="addGeologyRow" class="ghost" style="width:100%;margin:8px 0;">+ Add Formation</button>
+    <div class="modal-table-wrap" style="max-height:60vh;">
+      <table class="modal-table" id="geologyTable">
+        <thead><tr><th>#</th><th>Formation</th><th>Lithology</th><th>Top (m)</th><th>Bottom (m)</th><th>Color</th><th></th></tr></thead>
+        <tbody id="geologyTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="testingZonesOverlay" style="display:none;">
+  <div class="modal-box" style="width:720px; max-width:97vw; max-height:90vh;">
+    <div class="modal-header">
+      <h3>Testing Zones</h3>
+      <button id="closeTestingZones" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
+    </div>
+    <div class="modal-hint">Zones highlighted directly on the wellbore schematic. Depths in MD, m.</div>
+    <button id="addTestingZoneRow" class="ghost" style="width:100%;margin:8px 0;">+ Add Testing Zone</button>
+    <div class="modal-table-wrap" style="max-height:60vh;">
+      <table class="modal-table" id="testingZonesTable">
+        <thead><tr><th>#</th><th>Zone Name</th><th>Test Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Height (m)</th><th>Color</th><th></th></tr></thead>
+        <tbody id="testingZonesTbody"></tbody>
       </table>
     </div>
   </div>
@@ -1037,11 +1081,19 @@
   /* ---------------- State ---------------- */
   let state = {
     totalDepth: 3200,
-    components: [] // {id,type,label,top,bot,od,weight,grade,color,cementTop,cemented}
+    components: [], // {id,type,label,top,bot,od,weight,grade,color,cementTop,cemented}
+    geology: [], // formation tops: {id,name,lithology,top,bot,color}
+    testingZones: [] // well test intervals: {id,name,testType,top,bot,color}
   };
   let nextId = 1;
+  let nextGeologyId = 1;
+  const GEOLOGY_COLORS = ['#C9A876','#A8925C','#8B7355','#D4B896','#B5A582','#9C8862','#7D6B4E','#E0C9A6'];
+  let nextTestingZoneId = 1;
+  const TESTING_ZONE_COLORS = ['#E85D75','#5DA9E8','#E8B85D','#7ED88F','#B87EE8','#E87E5D'];
   let selectedId = null;
   let selectedVolId = null; // id of the currently selected volume group, shown in the Inspector
+  let selectedGeologyId = null; // id of the currently selected formation, shown in the Inspector
+  let selectedTestingZoneId = null; // id of the currently selected testing zone, shown in the Inspector
 
   /* ---------------- Undo / redo history ---------------- */
   const MAX_HISTORY = 60;
@@ -1069,7 +1121,7 @@
     document.getElementById('totalDepth').value = data.totalDepth;
     document.getElementById('wellName').value = data.wellName || 'Well-1';
     nextId = state.components.reduce((max,c)=> Math.max(max, (c.id||0)+1), 1);
-    selectedId = null;
+    selectedId = null; selectedGeologyId = null; selectedTestingZoneId = null;
     selectedVolId = null;
     render();
     restoringHistory = false;
@@ -1100,11 +1152,12 @@
   }
 
   /* ---------------- Geometry constants ---------------- */
-  const SVG_W = 560;
+  let SVG_W = 560;
   const MARGIN_TOP = 26;
   const MARGIN_BOT = 26;
   const RULER_W = 70;
-  const CENTER_X = RULER_W + 260;
+  const GEOLOGY_COL_W = 90; // width reserved for the Stratigraphic column, when formations exist
+  let CENTER_X = RULER_W + 260;
   const PX_PER_IN = 7.2; // half-width scale: halfWidthPx = od * PX_PER_IN / 2
   let SVG_H = 780;
   let splitScale = false; // when on, the top and bottom zones are compressed and the middle zone is expanded
@@ -1126,23 +1179,34 @@
   }
   function hasSplit(){
     const top = splitTopDepth(), bot = splitBottomDepth();
-    return splitScale && top > 0 && bot < state.totalDepth && top < bot;
+    return splitScale && top > 0 && bot <= state.totalDepth && top < bot;
+  }
+  // Computes the split-scale zone layout once, shared by mdToY/yToMd/the break markers.
+  // When the bottom break has been dragged down to (at or past) total depth, there's nothing
+  // left for a bottom zone to show — rather than reserve a wasted 20% of empty screen space
+  // for it, the middle zone absorbs that space and extends all the way to the real bottom.
+  function splitZoneLayout(){
+    const usable = SVG_H - MARGIN_TOP - MARGIN_BOT;
+    const top = splitTopDepth(), bot = splitBottomDepth();
+    const bottomZoneActive = bot < state.totalDepth - 0.5;
+    const zoneH = usable - SPLIT_GAP*(bottomZoneActive?2:1);
+    const topH = zoneH * SPLIT_TOP_FRACTION;
+    const midH = zoneH * (bottomZoneActive ? SPLIT_MID_FRACTION : (SPLIT_MID_FRACTION+SPLIT_BOT_FRACTION));
+    const botH = bottomZoneActive ? zoneH * SPLIT_BOT_FRACTION : 0;
+    const effectiveBot = bottomZoneActive ? bot : state.totalDepth;
+    return { top, bot, bottomZoneActive, topH, midH, botH, effectiveBot };
   }
   function mdToY(md){
     const usable = SVG_H - MARGIN_TOP - MARGIN_BOT;
     if (!hasSplit()){
       return MARGIN_TOP + (md/Math.max(state.totalDepth,1)) * usable;
     }
-    const top = splitTopDepth(), bot = splitBottomDepth();
-    const zoneH = usable - SPLIT_GAP*2;
-    const topH = zoneH * SPLIT_TOP_FRACTION;
-    const midH = zoneH * SPLIT_MID_FRACTION;
-    const botH = zoneH * SPLIT_BOT_FRACTION;
+    const { top, bot, topH, midH, botH, effectiveBot } = splitZoneLayout();
     if (md <= top){
       return MARGIN_TOP + (md/Math.max(top,1)) * topH;
     }
-    if (md <= bot){
-      const midSpan = Math.max(bot-top, 1);
+    if (md <= effectiveBot){
+      const midSpan = Math.max(effectiveBot-top, 1);
       return MARGIN_TOP + topH + SPLIT_GAP + ((md-top)/midSpan) * midH;
     }
     const botSpan = Math.max(state.totalDepth-bot, 1);
@@ -1154,17 +1218,13 @@
       let md = (y - MARGIN_TOP) / usable * state.totalDepth;
       return Math.max(0, Math.min(state.totalDepth, md));
     }
-    const top = splitTopDepth(), bot = splitBottomDepth();
-    const zoneH = usable - SPLIT_GAP*2;
-    const topH = zoneH * SPLIT_TOP_FRACTION;
-    const midH = zoneH * SPLIT_MID_FRACTION;
-    const botH = zoneH * SPLIT_BOT_FRACTION;
+    const { top, bot, topH, midH, botH, effectiveBot } = splitZoneLayout();
     const relY = y - MARGIN_TOP;
     let md;
     if (relY <= topH){
       md = (relY/topH) * top;
     } else if (relY <= topH + SPLIT_GAP + midH){
-      const midSpan = Math.max(bot-top, 1);
+      const midSpan = Math.max(effectiveBot-top, 1);
       const relMidY = relY - topH - SPLIT_GAP;
       md = top + (relMidY/midH) * midSpan;
     } else {
@@ -1388,14 +1448,32 @@
       linerRefId: def.kind==='hanger' ? null : undefined,
       gun: def.kind==='perf' ? '' : undefined,
       spf: def.kind==='perf' ? '' : undefined,
+      testingZoneId: def.kind==='perf' ? null : undefined,
       labelDx: 0,
       labelDy: 0
     };
     state.components.push(comp);
-    selectedId = comp.id; selectedVolId = null;
+    selectedId = comp.id; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
     render();
   }
   function round1(v){ return Math.round(v*10)/10; }
+  // Point components (packer/hanger/annularpacker/note) should always be a single depth, never
+  // a range — this self-heals any loaded component whose bot has drifted from its top, e.g.
+  // from an older version of a saved file, rather than silently rendering a phantom length.
+  function normalizePointComponents(components){
+    return components.map(c=>{
+      if (['packer','hanger','annularpacker','note'].includes(c.kind) && c.bot !== c.top){
+        return { ...c, bot: c.top };
+      }
+      return c;
+    });
+  }
+  // Escapes a value for safe use inside an HTML attribute (e.g. value="..."). Needed because
+  // labels/grades/etc. in this app routinely contain a literal " for inch notation (7" Liner),
+  // which would otherwise prematurely close the attribute and truncate the displayed value.
+  function escAttr(v){
+    return String(v==null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  }
   // Custom confirmation modal — native confirm() can be silently suppressed by the browser
   // after several dialogs fire in one session, so this avoids relying on it entirely
   function csConfirm(message, onConfirm){
@@ -1544,17 +1622,19 @@
       const sa = a.sectionNumber!=null ? a.sectionNumber : Infinity;
       const sb = b.sectionNumber!=null ? b.sectionNumber : Infinity;
       if (sa !== sb) return sa - sb;
-      return a.top - b.top;
+      const oa = a.tableOrder!=null ? a.tableOrder : a.top;
+      const ob = b.tableOrder!=null ? b.tableOrder : b.top;
+      return oa - ob;
     });
     if (!list.length){
-      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--text-muted);padding:20px;">No components yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;color:var(--text-muted);padding:20px;">No components yet.</td></tr>`;
       return;
     }
     const sectionOptions = Array.from({length:10}, (_,n)=>n+1); // Section 1-10
     let rowNum = 0;
     let lastSection = undefined; // distinct from null/numbers so the first group always gets a header
     let sectionHidden = false;
-    tbody.innerHTML = list.map(c=>{
+    tbody.innerHTML = list.map((c,idx)=>{
       const typeLabel = TYPES[c.type]?.label || c.type;
       const idVal = c.innerDiameter!=null ? c.innerDiameter : (c.od!=null ? round1(c.od*0.9) : null);
       const cementedText = c.kind==='casing' ? (c.cemented ? `Yes${c.cementTop!=null?` (top ${c.cementTop}m)`:''}` : 'No') : '\u2014';
@@ -1568,7 +1648,7 @@
         const sectionKey = c.sectionNumber!=null ? String(c.sectionNumber) : 'none';
         sectionHidden = !!hiddenTableSections[sectionKey];
         const headerText = c.sectionNumber!=null ? `Section ${c.sectionNumber}` : 'No Section Assigned';
-        headerRow = `<tr class="table-view-section-header"><td colspan="12" style="font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:0.05em;color:var(--text-muted);background:var(--panel);padding:6px 10px;">
+        headerRow = `<tr class="table-view-section-header"><td colspan="14" style="font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:0.05em;color:var(--text-muted);background:var(--panel);padding:6px 10px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-weight:400;">
             <input type="checkbox" class="section-hide-toggle" data-section-key="${sectionKey}" ${sectionHidden?'checked':''}>
             Hide
@@ -1579,7 +1659,10 @@
       // note: sectionHidden no longer suppresses rows here — it now controls diagram
       // visibility only, rows always stay visible in Table View
       rowNum++;
-      return `${headerRow}<tr>
+      const reorderCell = `<div style="display:flex;gap:2px;align-items:center;">
+        <span class="table-drag-handle" data-comp-id="${c.id}" title="Drag to reorder" style="cursor:grab;padding:2px 6px;color:var(--text-muted);user-select:none;">&#8942;&#8942;</span>
+      </div>`;
+      return `${headerRow}<tr draggable="true" class="table-drag-row" data-comp-id="${c.id}">
         <td>${rowNum}</td>
         <td>${sectionSelect}</td>
         <td>${c.label||typeLabel}</td>
@@ -1592,8 +1675,65 @@
         <td>${c.weight!=null && c.weight!=='' ? c.weight : '\u2014'}</td>
         <td>${c.grade || '\u2014'}</td>
         <td>${cementedText}</td>
+        <td style="text-align:center;"><input type="checkbox" class="table-visible-toggle" data-comp-id="${c.id}" ${c.hidden?'':'checked'} title="Show/hide in drawing"></td>
+        <td>${reorderCell}</td>
       </tr>`;
     }).join('');
+    tbody.querySelectorAll('.table-visible-toggle').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const id = parseInt(cb.dataset.compId);
+        const c = list.find(x=>x.id===id);
+        if (c){ c.hidden = !cb.checked; render(); }
+      });
+    });
+    // Drag-and-drop reordering — same tableOrder mechanism and same-section restriction as
+    // the Move Up/Down buttons, just via mouse drag instead of one step at a time.
+    let dragCompId = null;
+    tbody.querySelectorAll('tr.table-drag-row').forEach(row=>{
+      row.addEventListener('dragstart', e=>{
+        dragCompId = parseInt(row.dataset.compId);
+        e.dataTransfer.effectAllowed = 'move';
+        row.classList.add('table-drag-dragging');
+      });
+      row.addEventListener('dragend', ()=>{
+        row.classList.remove('table-drag-dragging');
+        tbody.querySelectorAll('.table-drag-over-top,.table-drag-over-bottom').forEach(r=>r.classList.remove('table-drag-over-top','table-drag-over-bottom'));
+      });
+      row.addEventListener('dragover', e=>{
+        e.preventDefault();
+        if (dragCompId==null || parseInt(row.dataset.compId)===dragCompId) return;
+        const targetComp = list.find(c=>c.id===parseInt(row.dataset.compId));
+        const draggedComp = list.find(c=>c.id===dragCompId);
+        if (!targetComp || !draggedComp || targetComp.sectionNumber!==draggedComp.sectionNumber) return; // no cross-section drop
+        const rect = row.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < rect.height/2;
+        tbody.querySelectorAll('.table-drag-over-top,.table-drag-over-bottom').forEach(r=>r.classList.remove('table-drag-over-top','table-drag-over-bottom'));
+        row.classList.add(before ? 'table-drag-over-top' : 'table-drag-over-bottom');
+      });
+      row.addEventListener('drop', e=>{
+        e.preventDefault();
+        tbody.querySelectorAll('.table-drag-over-top,.table-drag-over-bottom').forEach(r=>r.classList.remove('table-drag-over-top','table-drag-over-bottom'));
+        if (dragCompId==null) return;
+        const targetId = parseInt(row.dataset.compId);
+        if (targetId===dragCompId) return;
+        const draggedComp = list.find(c=>c.id===dragCompId);
+        const targetComp = list.find(c=>c.id===targetId);
+        if (!draggedComp || !targetComp || draggedComp.sectionNumber!==targetComp.sectionNumber) return;
+        const rect = row.getBoundingClientRect();
+        const before = (e.clientY - rect.top) < rect.height/2;
+        // reorder within this section only: pull the dragged item out, splice it back in
+        // at the drop position, then reassign a fresh, explicit tableOrder to everyone
+        const sectionItems = list.filter(c=>c.sectionNumber===draggedComp.sectionNumber);
+        const fromIdx = sectionItems.findIndex(c=>c.id===dragCompId);
+        sectionItems.splice(fromIdx,1);
+        let toIdx = sectionItems.findIndex(c=>c.id===targetId);
+        if (!before) toIdx++;
+        sectionItems.splice(toIdx,0,draggedComp);
+        sectionItems.forEach((c,i)=>{ c.tableOrder = i; });
+        dragCompId = null;
+        renderTableView();
+      });
+    });
     tbody.querySelectorAll('select[data-comp-id]').forEach(sel=>{
       sel.addEventListener('change', e=>{
         const id = parseInt(sel.dataset.compId);
@@ -1662,6 +1802,303 @@
         if (g){ g.color = inp.value; render(); }
       });
     });
+  }
+
+  function renderGeologyTable(){
+    const tbody = document.getElementById('geologyTbody');
+    const formations = state.geology.slice().sort((a,b)=>a.top-b.top);
+    if (!formations.length){
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">No formations added yet. Use "+ Add Formation" above.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = formations.map((f,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td><input type="text" class="table-cell-input geo-name-input" data-geo-id="${f.id}" value="${escAttr(f.name)}" placeholder="e.g. Miocene Sand" style="width:130px;"></td>
+        <td><input type="text" class="table-cell-input geo-lith-input" data-geo-id="${f.id}" value="${escAttr(f.lithology)}" placeholder="e.g. Sandstone" style="width:110px;"></td>
+        <td><input type="number" class="table-cell-input geo-top-input" data-geo-id="${f.id}" value="${f.top}" style="width:70px;"></td>
+        <td><input type="number" class="table-cell-input geo-bot-input" data-geo-id="${f.id}" value="${f.bot}" style="width:70px;"></td>
+        <td><input type="color" class="geo-color-input" data-geo-id="${f.id}" value="${f.color||'#C9A876'}" style="width:36px;height:26px;padding:1px;cursor:pointer;"></td>
+        <td><button class="ghost geo-row-remove" data-geo-id="${f.id}" style="width:auto;padding:2px 8px;">&times;</button></td>
+      </tr>
+    `).join('');
+    const field = (cls, key, parse)=>{
+      tbody.querySelectorAll(cls).forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const id = parseInt(inp.dataset.geoId);
+          const f = state.geology.find(x=>x.id===id);
+          if (f){ f[key] = parse ? parse(inp.value) : inp.value; render(); }
+        });
+      });
+    };
+    field('.geo-name-input','name');
+    field('.geo-lith-input','lithology');
+    field('.geo-top-input','top', v=>parseFloat(v)||0);
+    field('.geo-bot-input','bot', v=>parseFloat(v)||0);
+    field('.geo-color-input','color');
+    tbody.querySelectorAll('.geo-row-remove').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = parseInt(btn.dataset.geoId);
+        state.geology = state.geology.filter(f=>f.id!==id);
+        renderGeologyTable();
+        render();
+      });
+    });
+  }
+
+  function renderTestingZonesTable(){
+    const tbody = document.getElementById('testingZonesTbody');
+    const zones = state.testingZones.slice().sort((a,b)=>a.top-b.top);
+    if (!zones.length){
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px;">No testing zones added yet. Use "+ Add Testing Zone" above.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = zones.map((z,i)=>{
+      const relatedPerfs = state.components.filter(c=>c.kind==='perf' && c.testingZoneId===z.id).sort((a,b)=>a.top-b.top);
+      const hasRelatedPerfs = relatedPerfs.length > 0;
+      const totalPerforated = relatedPerfs.reduce((sum,p)=>sum+(p.bot-p.top), 0);
+      const perfsRow = `<tr><td></td><td colspan="7" style="padding:2px 8px 10px 8px;font-size:11.5px;color:var(--text-muted);border-top:none;">
+        ${relatedPerfs.length
+          ? `<div style="font-weight:600;margin-bottom:3px;">Perforation intervals:</div>` +
+            relatedPerfs.map(p=>`<div>${p.label||'Perforations'}: ${round1(p.top)}\u2013${round1(p.bot)} m (Total Length ${round1(p.bot-p.top)} m)</div>`).join('') +
+            `<div style="margin-top:4px;font-weight:600;">Overall perforated interval: ${round1(totalPerforated)} m</div>`
+          : 'No perforation intervals assigned to this zone yet \u2014 set it from a Perforations component\u2019s own Inspector panel.'}
+      </td></tr>`;
+      return `
+      <tr>
+        <td>${i+1}</td>
+        <td><input type="text" class="table-cell-input tz-name-input" data-tz-id="${z.id}" value="${escAttr(z.name)}" placeholder="e.g. Zone 1" style="width:120px;"></td>
+        <td><input type="text" class="table-cell-input tz-type-input" data-tz-id="${z.id}" value="${escAttr(z.testType)}" placeholder="e.g. DST" style="width:100px;"></td>
+        <td><input type="number" class="table-cell-input tz-top-input" data-tz-id="${z.id}" value="${z.top}" style="width:70px;" ${hasRelatedPerfs?'disabled title="Derived from the shallowest related perforation\'s own top"':''}></td>
+        <td><input type="number" class="table-cell-input tz-bot-input" data-tz-id="${z.id}" value="${z.bot}" style="width:70px;" ${hasRelatedPerfs?'disabled title="Derived from the deepest related perforation\'s own bottom"':''}></td>
+        <td><div class="insp-readout">${round1(z.bot-z.top)}</div></td>
+        <td><input type="color" class="tz-color-input" data-tz-id="${z.id}" value="${z.color||'#E85D75'}" style="width:36px;height:26px;padding:1px;cursor:pointer;"></td>
+        <td><button class="ghost tz-row-remove" data-tz-id="${z.id}" style="width:auto;padding:2px 8px;">&times;</button></td>
+      </tr>
+      ${perfsRow}
+    `;
+    }).join('');
+    const field = (cls, key, parse)=>{
+      tbody.querySelectorAll(cls).forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const id = parseInt(inp.dataset.tzId);
+          const z = state.testingZones.find(x=>x.id===id);
+          if (z){
+            z[key] = parse ? parse(inp.value) : inp.value;
+            render();
+            if (key==='top' || key==='bot'){
+              const row = inp.closest('tr');
+              const heightCell = row?.querySelector('.insp-readout');
+              if (heightCell) heightCell.textContent = round1(z.bot-z.top);
+            }
+          }
+        });
+      });
+    };
+    field('.tz-name-input','name');
+    field('.tz-type-input','testType');
+    field('.tz-top-input','top', v=>parseFloat(v)||0);
+    field('.tz-bot-input','bot', v=>parseFloat(v)||0);
+    field('.tz-color-input','color');
+    tbody.querySelectorAll('.tz-row-remove').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = parseInt(btn.dataset.tzId);
+        state.testingZones = state.testingZones.filter(z=>z.id!==id);
+        renderTestingZonesTable();
+        render();
+      });
+    });
+  }
+
+  // Stratigraphic column — a narrow strip of colored formation bands positioned right after
+  // the depth axis and before the wellbore schematic, as part of the same SVG (not a separate
+  // element), so it automatically zooms, pans, and stays depth-aligned along with everything
+  // else without any extra synchronization.
+  function renderGeologyColumnSvg(svgNS){
+    const g = document.createElementNS(svgNS,'g');
+    g.setAttribute('transform', `translate(${RULER_W},0)`);
+    const formations = state.geology.slice().sort((a,b)=>a.top-b.top);
+    formations.forEach(f=>{
+      const y1 = mdToY(Math.min(f.top,f.bot));
+      const y2 = mdToY(Math.max(f.top,f.bot));
+      const h = Math.max(y2-y1, 1);
+      const rect = document.createElementNS(svgNS,'rect');
+      rect.setAttribute('x', 0); rect.setAttribute('y', y1);
+      rect.setAttribute('width', GEOLOGY_COL_W); rect.setAttribute('height', h);
+      rect.setAttribute('fill', f.color||'#C9A876');
+      const isSelected = f.id===selectedGeologyId;
+      rect.setAttribute('stroke', isSelected ? 'var(--accent)' : 'var(--sch-text-muted)');
+      rect.setAttribute('stroke-width', isSelected ? 2.5 : 0.75);
+      rect.style.cursor = 'pointer';
+      rect.dataset.geoId = f.id;
+      rect.addEventListener('click', e=>{
+        e.stopPropagation();
+        selectedGeologyId = f.id;
+        selectedId = null; selectedVolId = null; selectedTestingZoneId = null;
+        render();
+      });
+      g.appendChild(rect);
+      // formation name, horizontal for bands tall enough to read normally
+      const label = document.createElementNS(svgNS,'text');
+      label.setAttribute('font-size','9.5px');
+      label.setAttribute('font-family','var(--font-mono)');
+      label.setAttribute('fill', '#1a1a1a');
+      label.setAttribute('font-weight','600');
+      const displayText = f.name || f.lithology || 'Formation';
+      if (h >= 46){
+        label.setAttribute('x', GEOLOGY_COL_W/2); label.setAttribute('y', (y1+y2)/2 - 4);
+        label.setAttribute('text-anchor','middle');
+        label.textContent = displayText;
+        if (f.lithology && f.name){
+          const lith = document.createElementNS(svgNS,'text');
+          lith.setAttribute('x', GEOLOGY_COL_W/2); lith.setAttribute('y', (y1+y2)/2 + 9);
+          lith.setAttribute('text-anchor','middle'); lith.setAttribute('font-size','8.5px');
+          lith.setAttribute('font-family','var(--font-mono)'); lith.setAttribute('fill', '#1a1a1a'); lith.setAttribute('opacity','0.75');
+          lith.textContent = f.lithology;
+          g.appendChild(lith);
+        }
+      } else if (h >= 14){
+        label.setAttribute('x', GEOLOGY_COL_W/2); label.setAttribute('y', (y1+y2)/2 + 3);
+        label.setAttribute('text-anchor','middle');
+        label.textContent = displayText;
+      }
+      if (label.textContent) g.appendChild(label);
+    });
+    // formation boundary lines extend across the full drawing width, so each top/bottom can
+    // be visually correlated with exactly where it falls against the casing design — dashed
+    // and muted so they read as reference lines rather than competing with the schematic itself
+    const boundaryDepths = [...new Set(formations.flatMap(f=>[f.top,f.bot]))];
+    boundaryDepths.forEach(d=>{
+      const line = document.createElementNS(svgNS,'line');
+      const y = mdToY(d);
+      line.setAttribute('x1', 0); line.setAttribute('x2', SVG_W-RULER_W);
+      line.setAttribute('y1', y); line.setAttribute('y2', y);
+      line.setAttribute('stroke', 'var(--sch-text-muted)'); line.setAttribute('stroke-width', 0.75);
+      line.setAttribute('stroke-dasharray', '4,3'); line.setAttribute('opacity', '0.55');
+      g.appendChild(line);
+    });
+    // short solid ticks right at the column's own edge, matching the main drawing's tick style
+    boundaryDepths.forEach(d=>{
+      const tick = document.createElementNS(svgNS,'line');
+      const y = mdToY(d);
+      tick.setAttribute('x1', 0); tick.setAttribute('x2', GEOLOGY_COL_W);
+      tick.setAttribute('y1', y); tick.setAttribute('y2', y);
+      tick.setAttribute('stroke', 'var(--sch-text)'); tick.setAttribute('stroke-width', 0.75);
+      g.appendChild(tick);
+    });
+    return g;
+  }
+
+  // Testing Zones — semi-transparent highlighted bands overlaid directly on the wellbore
+  // (unlike the Stratigraphic column, these represent intervals within the well itself, so
+  // they sit on top of the schematic rather than in a separate column beside it). Rendered
+  // before the casing strings so the casing details stay visible on top of the highlight.
+  const TESTING_ZONE_HALF_W_LEFT = 50;
+  const TESTING_ZONE_LABEL_GAP = 45; // how far the zone's own label sits from the wellbore centerline, keeping it clear of the casing
+  const TESTING_ZONE_HALF_W_RIGHT = 130;
+  function renderTestingZonesSvg(svgNS){
+    const g = document.createElementNS(svgNS,'g');
+    g.setAttribute('class','testing-zones-group');
+    state.testingZones.forEach(z=>{
+      const y1 = mdToY(Math.min(z.top,z.bot));
+      const y2 = mdToY(Math.max(z.top,z.bot));
+      const h = Math.max(y2-y1, 2);
+      const isSelected = z.id===selectedTestingZoneId;
+      const hasOwnRibbons = state.components.some(c=>c.kind==='perf' && c.testingZoneId===z.id);
+      const rect = document.createElementNS(svgNS,'rect');
+      rect.setAttribute('x', CENTER_X-TESTING_ZONE_HALF_W_LEFT); rect.setAttribute('y', y1);
+      rect.setAttribute('width', TESTING_ZONE_HALF_W_LEFT+TESTING_ZONE_HALF_W_RIGHT); rect.setAttribute('height', h);
+      rect.setAttribute('fill', z.color||'#E85D75');
+      // when this zone has its own ribbons, they already fill this exact area — drawing
+      // this rect visibly on top too would double the opacity and look darker than the
+      // ribbons and labels, so it stays invisible here and only serves as the click target
+      rect.setAttribute('opacity', hasOwnRibbons ? '0' : (isSelected ? '0.30' : '0.16'));
+      rect.style.cursor = 'pointer';
+      rect.dataset.tzId = z.id;
+      rect.addEventListener('click', e=>{
+        e.stopPropagation();
+        selectedTestingZoneId = z.id;
+        selectedId = null; selectedVolId = null; selectedGeologyId = null;
+        render();
+      });
+      g.appendChild(rect);
+      const label = document.createElementNS(svgNS,'text');
+      label.setAttribute('x', CENTER_X+TESTING_ZONE_LABEL_GAP+6); label.setAttribute('y', y1+13);
+      label.setAttribute('text-anchor', 'start');
+      label.setAttribute('font-size','10px'); label.setAttribute('font-family','var(--font-mono)');
+      label.setAttribute('fill', z.color||'#E85D75'); label.setAttribute('font-weight','700');
+      label.style.pointerEvents = 'none';
+      label.textContent = z.name || z.testType || 'Test Zone';
+      g.appendChild(label);
+    });
+    return g;
+  }
+
+  // Sankey-style flow links from each zone band's right edge out to each related
+  // perforation's own LABEL — not just its raw depth — so the link always points at
+  // wherever the label actually ended up, including after being dragged or shifted by
+  // overlap resolution. Must run after both components and resolveLabelOverlaps have
+  // rendered, since only then are labels in their final positions.
+  function renderTestingZoneLinks(svgNS, svg){
+    const g = document.createElementNS(svgNS,'g');
+    g.setAttribute('class','testing-zone-links');
+    state.testingZones.forEach(z=>{
+      const y1 = mdToY(Math.min(z.top,z.bot));
+      const y2 = mdToY(Math.max(z.top,z.bot));
+      const h = Math.max(y2-y1, 2);
+      const isSelected = z.id===selectedTestingZoneId;
+      const relatedPerfs = state.components.filter(c=>c.kind==='perf' && c.testingZoneId===z.id).sort((a,b)=>a.top-b.top);
+      const totalPerfLen = relatedPerfs.reduce((s,p)=>s+(p.bot-p.top), 0) || 1;
+      const zoneLeft = CENTER_X-TESTING_ZONE_HALF_W_LEFT;
+      const x1 = CENTER_X+TESTING_ZONE_HALF_W_RIGHT;
+      let sourceY = y1;
+      relatedPerfs.forEach(p=>{
+        // the source side is a slice of the zone's own full height, proportional to this
+        // perforation's own length relative to the others sharing the same zone — so a
+        // single perforation (the common case) gets the entire zone height as its source,
+        // and multiple perforations split it so their stacked total still equals the
+        // zone's own height exactly, with no gaps or overlap
+        const perfLen = p.bot-p.top;
+        const sourceH = h * (perfLen/totalPerfLen);
+        const sy1 = sourceY, sy2 = sourceY + sourceH;
+        sourceY += sourceH;
+        // find this perforation's actual, already-resolved label position — its label-hit
+        // rect carries the final y/height after any drag offset and overlap-avoidance shift
+        const hit = svg.querySelector(`.label-hit[data-comp-id="${p.id}"]`);
+        if (!hit) return;
+        const hitX = parseFloat(hit.getAttribute('x'));
+        const hitW = parseFloat(hit.getAttribute('width'));
+        const ty1 = parseFloat(hit.getAttribute('y'));
+        const ty2 = ty1 + 28; // fixed height for the label side, independent of how many subtext lines this particular label happens to have
+        // the label may sit on the left side of the well (dragged there) — connect to
+        // whichever edge of its hit box actually faces back toward the zone, then extend
+        // the ribbon flat across the label's own full width so it merges through the label
+        // area as one continuous shape instead of ending abruptly at its near edge
+        const x2 = hitX >= CENTER_X ? hitX : hitX + hitW;
+        const x3 = hitX >= CENTER_X ? hitX + hitW : hitX;
+        const midX = (x1+x2)/2;
+        // the flat segment from the zone's own left edge to its right edge, the curved
+        // segment out to the label, and the flat segment across the label's own width are
+        // all one single closed path — so the zone band, connector, and label read as a
+        // single extended ribbon, not three separate pieces
+        const d = `M ${zoneLeft} ${sy1}
+          L ${x1} ${sy1}
+          C ${midX} ${sy1}, ${midX} ${ty1}, ${x2} ${ty1}
+          L ${x3} ${ty1}
+          L ${x3} ${ty2}
+          L ${x2} ${ty2}
+          C ${midX} ${ty2}, ${midX} ${sy2}, ${x1} ${sy2}
+          L ${zoneLeft} ${sy2}
+          Z`;
+        const link = document.createElementNS(svgNS,'path');
+        link.setAttribute('d', d);
+        link.setAttribute('fill', z.color||'#E85D75');
+        link.setAttribute('opacity', isSelected ? '0.30' : '0.16');
+        link.style.pointerEvents = 'none';
+        g.appendChild(link);
+      });
+    });
+    return g;
   }
 
   /* ---------------- Drop handling on canvas ---------------- */
@@ -1809,22 +2246,6 @@
     return g;
   }
 
-  function centerlineAndDimensions(svgNS){
-    const g = document.createElementNS(svgNS,'g');
-    g.setAttribute('class','centerline-group');
-
-    // central axis line, full length of the well
-    const axis = document.createElementNS(svgNS,'line');
-    axis.setAttribute('x1', CENTER_X); axis.setAttribute('x2', CENTER_X);
-    axis.setAttribute('y1', mdToY(0)); axis.setAttribute('y2', mdToY(state.totalDepth));
-    axis.setAttribute('stroke', '#4A5D6B'); axis.setAttribute('stroke-width', 1);
-    axis.setAttribute('stroke-dasharray', '6,4');
-    axis.setAttribute('opacity', '0.6');
-    g.appendChild(axis);
-
-    return g;
-  }
-
   function enclosingIdFor(comp){
     const casings = sortedForNesting();
     const idx = casings.findIndex(c=>c.id===comp.id);
@@ -1840,12 +2261,31 @@
     return comp.od + 3.2; // open borehole gauge estimate
   }
 
+  // Derives each testing zone's own top/bottom from whichever perforation intervals are
+  // assigned to it - top is the shallowest perforation's top, bottom is the deepest
+  // perforation's bottom. A zone with no perforations assigned yet keeps whatever range was
+  // set manually, since there's nothing to derive it from.
+  function syncTestingZoneBoundsFromPerforations(){
+    state.testingZones.forEach(z=>{
+      const relatedPerfs = state.components.filter(c=>c.kind==='perf' && c.testingZoneId===z.id);
+      if (relatedPerfs.length){
+        z.top = Math.min(...relatedPerfs.map(p=>p.top));
+        z.bot = Math.max(...relatedPerfs.map(p=>p.bot));
+      }
+    });
+  }
   function render(opts){
+    syncTestingZoneBoundsFromPerforations();
     SVG_H = Math.max(500, Math.min(window.innerHeight-100, 2400));
+    const hasGeologyCol = state.geology.length > 0;
+    CENTER_X = RULER_W + (hasGeologyCol ? GEOLOGY_COL_W : 0) + 260;
+    SVG_W = 560 + (hasGeologyCol ? GEOLOGY_COL_W : 0);
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS,'svg');
     svg.setAttribute('width', SVG_W+40);
     svg.setAttribute('height', SVG_H);
+
+    if (hasGeologyCol) svg.appendChild(renderGeologyColumnSvg(svgNS));
 
     // depth ruler
     const rulerG = document.createElementNS(svgNS,'g');
@@ -1861,6 +2301,7 @@
       txt.setAttribute('x', RULER_W-14); txt.setAttribute('y', y+3);
       txt.setAttribute('text-anchor','end');
       txt.setAttribute('class','axis-label');
+      txt.setAttribute('font-weight','700');
       txt.textContent = Math.round(d);
       rulerG.appendChild(txt);
     }
@@ -1875,18 +2316,17 @@
     axisTitle.setAttribute('transform','rotate(-90)');
     axisTitle.setAttribute('text-anchor','middle');
     axisTitle.setAttribute('class','axis-label');
+    axisTitle.setAttribute('font-weight','700');
     axisTitle.setAttribute('style','letter-spacing:1px;');
     axisTitle.textContent = 'MD, m';
     rulerG.appendChild(axisTitle);
     svg.appendChild(rulerG);
+    if (state.testingZones.length) svg.appendChild(renderTestingZonesSvg(svgNS));
 
     // scale break markers — two draggable horizontal lines showing where the top/bottom
     // compressed zones meet the expanded middle zone
     if (hasSplit()){
-      const usable = SVG_H - MARGIN_TOP - MARGIN_BOT;
-      const zoneH = usable - SPLIT_GAP*2;
-      const topH = zoneH * SPLIT_TOP_FRACTION;
-      const midH = zoneH * SPLIT_MID_FRACTION;
+      const { topH, midH, bottomZoneActive } = splitZoneLayout();
       const renderBreakMarker = (which, defaultY, depthMd)=>{
         const breakY = (scaleBreakDragWhich===which && scaleBreakDragY!=null) ? scaleBreakDragY : defaultY;
         const breakG = document.createElementNS(svgNS,'g');
@@ -1925,7 +2365,10 @@
         svg.appendChild(breakG);
       };
       renderBreakMarker('top', MARGIN_TOP + topH + SPLIT_GAP/2, splitTopDepth());
-      renderBreakMarker('bottom', MARGIN_TOP + topH + SPLIT_GAP + midH + SPLIT_GAP/2, splitBottomDepth());
+      const bottomDefaultY = bottomZoneActive
+        ? MARGIN_TOP + topH + SPLIT_GAP + midH + SPLIT_GAP/2
+        : MARGIN_TOP + topH + SPLIT_GAP + midH;
+      renderBreakMarker('bottom', bottomDefaultY, splitBottomDepth());
     }
 
     // ground line
@@ -2022,14 +2465,12 @@
     // subtle guide lines showing the label boundaries on each side
     svg.appendChild(labelBoundaryLines(svgNS));
 
-    // central axis line + distance-from-center dimensions
-    svg.appendChild(centerlineAndDimensions(svgNS));
-
     const host = document.getElementById('svgHost');
     host.innerHTML='';
     host.appendChild(svg);
     refreshLabelHitBoxes(svg);
     resolveLabelOverlaps(svg);
+    if (state.testingZones.length) svg.appendChild(renderTestingZoneLinks(svgNS, svg));
 
     // (re)attach drag interactions
     attachInteractions(svg);
@@ -2113,6 +2554,8 @@
     lg.querySelectorAll('text').forEach(t=> t.setAttribute('y', parseFloat(t.getAttribute('y'))+dy));
     const leader = lg.querySelector('line');
     if (leader) leader.setAttribute('y2', parseFloat(leader.getAttribute('y2'))+dy);
+    const bg = lg.querySelector('.label-bg');
+    if (bg) bg.setAttribute('y', parseFloat(bg.getAttribute('y'))+dy);
   }
 
   function niceStep(total){
@@ -2270,17 +2713,18 @@
       if (resolved){
         const outerHw = halfW(outerCasing.innerDiameter!=null ? outerCasing.innerDiameter : outerCasing.od);
         const innerHw = halfW(innerCasing.od);
-        // simple connector lines from the liner wall to the host casing's ID — nothing drawn outside it
-        const lineYs = [yTop, (yTop+yBot)/2, yBot];
-        lineYs.forEach(yy=>{
-          [-1,1].forEach(side=>{
-            const ln = document.createElementNS(svgNS,'line');
-            ln.setAttribute('x1', CENTER_X+side*innerHw); ln.setAttribute('x2', CENTER_X+side*outerHw);
-            ln.setAttribute('y1', yy); ln.setAttribute('y2', yy);
-            ln.setAttribute('stroke', c.color); ln.setAttribute('stroke-width','2');
-            ln.setAttribute('class','wall');
-            g.appendChild(ln);
-          });
+        // filled rectangular band from the liner's own wall out to the host casing's ID,
+        // matching the same style used for Packer and Annular Casing Packer
+        [-1,1].forEach(side=>{
+          const bandW = Math.max(outerHw-innerHw, 0);
+          const rectX = side<0 ? CENTER_X-outerHw : CENTER_X+innerHw;
+          const body = document.createElementNS(svgNS,'rect');
+          body.setAttribute('x', rectX); body.setAttribute('y', yTop);
+          body.setAttribute('width', bandW); body.setAttribute('height', ph);
+          body.setAttribute('fill', c.color); body.setAttribute('opacity','0.85');
+          body.setAttribute('stroke', c.color); body.setAttribute('stroke-width','1');
+          body.setAttribute('class','wall');
+          g.appendChild(body);
         });
         appendLabelGroup(svgNS, g, c, CENTER_X+outerHw, y, rightLabelX(), y+3, `${c.label} @ ${c.top} m`, null);
         g.appendChild(hitRect(svgNS, CENTER_X-outerHw-9, yTop-1, outerHw*2+18, ph+2));
@@ -2400,6 +2844,8 @@
       const hostCasing = casingAt((c.top+c.bot)/2);
       const baseHw = hostCasing ? halfW(hostCasing.od) : 8;
       const spikeLen = hostCasing ? 17 : 11;
+      const relatedZone = c.testingZoneId!=null ? state.testingZones.find(z=>z.id===c.testingZoneId) : null;
+      const spikeColor = relatedZone?.color || c.color;
       const n = Math.max(3, Math.round((y2-y1)/13));
       for(let i=0;i<n;i++){
         const yy = y1 + (y2-y1)*(i/(n-1||1));
@@ -2408,7 +2854,7 @@
           const tipX = CENTER_X + side*(baseHw+spikeLen);
           const spike = document.createElementNS(svgNS,'path');
           spike.setAttribute('d', `M ${baseX} ${yy-1.2} L ${tipX} ${yy} L ${baseX} ${yy+1.2} Z`);
-          spike.setAttribute('fill', c.color);
+          spike.setAttribute('fill', spikeColor);
           spike.setAttribute('opacity', '0.9');
           g.appendChild(spike);
         });
@@ -2451,7 +2897,7 @@
     t.setAttribute('x',x); t.setAttribute('y',y); t.setAttribute('class',cls);
     t.textContent=txt; return t;
   }
-  function appendLabelGroup(svgNS, parentG, comp, anchorX, anchorY, baseX, baseY, mainText, subText){
+  function appendLabelGroup(svgNS, parentG, comp, anchorX, anchorY, baseX, baseY, mainText, subText, bgColor){
     if (comp.labelHidden) return;
     const dx = comp.labelDx||0, dy = comp.labelDy||0;
     let lx = baseX+dx;
@@ -2459,7 +2905,13 @@
     // the area between the two label boundaries is off-limits — push the label out to
     // whichever boundary it's closest to. Enforced here (not just during dragging) so this
     // also applies to positions saved before this rule existed, or set any other way.
-    if (lx > CENTER_X && lx < rightLabelX()) lx = rightLabelX();
+    // Perforation labels are a special case: they're always confined to the right side of
+    // the well, at twice the normal boundary distance, so they never end up mixed in among
+    // other component labels on either side.
+    if (comp.kind === 'perf'){
+      const perfBoundary = CENTER_X + labelBoundaryOffset()*2;
+      if (lx < perfBoundary) lx = perfBoundary;
+    } else if (lx > CENTER_X && lx < rightLabelX()) lx = rightLabelX();
     else if (lx <= CENTER_X && lx > leftLabelX()) lx = leftLabelX();
     // if the label ends up on the opposite side of the wellbore centerline from its default
     // anchor, connect to the mirrored point on that same side instead — otherwise the leader
@@ -2476,7 +2928,8 @@
     // component type it came from — a label dragged across the well is simply "on that side" now
     const side = (lx >= CENTER_X) ? 'right' : 'left';
     lg.dataset.side = side;
-    if (Math.abs(lx-effAnchorX)>20 || Math.abs(ly-anchorY)>20){
+    const hasZoneRibbon = comp.kind==='perf' && comp.testingZoneId != null;
+    if (!hasZoneRibbon && (Math.abs(lx-effAnchorX)>20 || Math.abs(ly-anchorY)>20)){
       const leader = document.createElementNS(svgNS,'line');
       leader.setAttribute('x1',effAnchorX); leader.setAttribute('y1',anchorY);
       const labelIsLeftOfAnchor = lx < effAnchorX;
@@ -2487,16 +2940,25 @@
     }
     // left-side labels align by their left edge; right-side labels align by their right edge
     const textAnchor = side==='left' ? 'end' : 'start';
+    const subLines = subText ? (Array.isArray(subText) ? subText : [subText]) : [];
+    let hitH = 14;
+    subLines.forEach((line, i)=>{ hitH = 14 + 12*(i+1); });
+    if (bgColor){
+      const bg = document.createElementNS(svgNS,'rect');
+      bg.setAttribute('x', lx-4); bg.setAttribute('y', ly-11);
+      bg.setAttribute('width', 148); bg.setAttribute('height', hitH);
+      bg.setAttribute('fill', bgColor); bg.setAttribute('opacity', '0.16');
+      bg.setAttribute('rx', 2);
+      bg.setAttribute('class', 'label-bg');
+      lg.appendChild(bg);
+    }
     const mainEl = textEl(svgNS, lx, ly, mainText, 'comp-label');
     mainEl.setAttribute('text-anchor', textAnchor);
     lg.appendChild(mainEl);
-    const subLines = subText ? (Array.isArray(subText) ? subText : [subText]) : [];
-    let hitH = 14;
     subLines.forEach((line, i)=>{
       const subEl = textEl(svgNS, lx, ly+12*(i+1), line, 'comp-label-sub');
       subEl.setAttribute('text-anchor', textAnchor);
       lg.appendChild(subEl);
-      hitH = 14 + 12*(i+1);
     });
     const hit = document.createElementNS(svgNS,'rect');
     hit.setAttribute('x', lx-4); hit.setAttribute('y', ly-11);
@@ -2591,20 +3053,17 @@
         // scale) — recalculating this from the live split-dependent mapping on every mousemove
         // creates a feedback loop, since moving the marker changes the very mapping used to
         // interpret further mouse movement, making the drag feel jerky/non-linear
-        const usable = SVG_H - MARGIN_TOP - MARGIN_BOT;
-        const zoneH = hasSplit() ? (usable - SPLIT_GAP*2) : usable;
-        const topH = zoneH * SPLIT_TOP_FRACTION;
-        const midH = zoneH * SPLIT_MID_FRACTION;
+        const { topH, midH, bottomZoneActive } = splitZoneLayout();
         const pxPerMd = which==='top'
           ? topH / Math.max(startSplit, 1)
           : midH / Math.max((splitBottomDepth()-splitTopDepth()), 1);
         const restY = which==='top'
           ? (MARGIN_TOP + topH + SPLIT_GAP/2)
-          : (MARGIN_TOP + topH + SPLIT_GAP + midH + SPLIT_GAP/2);
+          : (bottomZoneActive ? (MARGIN_TOP + topH + SPLIT_GAP + midH + SPLIT_GAP/2) : (MARGIN_TOP + topH + SPLIT_GAP + midH));
         function onMove(ev){
           const dyPx = (ev.clientY - startClientY) / scaleY;
           const dMd = dyPx / pxPerMd;
-          const newVal = round1(Math.max(1, Math.min(startSplit + dMd, state.totalDepth-1)));
+          const newVal = round1(Math.max(1, Math.min(startSplit + dMd, state.totalDepth)));
           if (which==='top'){
             manualSplitTopDepth = Math.min(newVal, splitBottomDepth()-1);
           } else {
@@ -2635,7 +3094,7 @@
         el.addEventListener('pointerdown', (e)=>{
           if (e.button !== 0) return; // left button only — right button is reserved for panning
           e.stopPropagation();
-          selectedId = id; selectedVolId = null;
+          selectedId = id; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
           const role = el.dataset.role;
           const rect = svg.getBoundingClientRect();
           const scaleY = SVG_H / rect.height;
@@ -2709,7 +3168,7 @@
       g.addEventListener('pointerdown', (e)=>{
         if (volumeCalcMode || e.button!==0) return; // in Volume Calc mode, clicks select/deselect bands instead
         e.stopPropagation();
-        selectedId = null;
+        selectedId = null; selectedGeologyId = null; selectedTestingZoneId = null;
         selectedVolId = id;
         render();
       });
@@ -2717,7 +3176,7 @@
         el.addEventListener('pointerdown', (e)=>{
           if (e.button !== 0) return;
           e.stopPropagation();
-          selectedId = null;
+          selectedId = null; selectedGeologyId = null; selectedTestingZoneId = null;
           selectedVolId = id;
           const rect = svg.getBoundingClientRect();
           const scaleY = SVG_H / rect.height;
@@ -2759,6 +3218,66 @@
   /* ---------------- Inspector ---------------- */
   function renderInspector(){
     const el = document.getElementById('inspectorContent');
+    if (selectedGeologyId != null){
+      const f = state.geology.find(g=>g.id===selectedGeologyId);
+      if (f){
+        el.className='';
+        el.innerHTML = `
+          <div class="comp-title">${(f.name||f.lithology||'Formation').replace(/</g,'&lt;')}</div>
+          <div class="comp-type">Formation</div>
+          <div class="insp-field"><label>Formation Name</label><input type="text" id="f_geo_name" value="${escAttr(f.name)}" placeholder="e.g. Miocene Sand"></div>
+          <div class="insp-field"><label>Lithology</label><input type="text" id="f_geo_lith" value="${escAttr(f.lithology)}" placeholder="e.g. Sandstone"></div>
+          <div class="insp-row">
+            <div class="insp-field"><label>Top (m)</label><input type="number" id="f_geo_top" value="${f.top}"></div>
+            <div class="insp-field"><label>Bottom (m)</label><input type="number" id="f_geo_bot" value="${f.bot}"></div>
+          </div>
+          <div class="insp-field"><label>Color</label><input type="color" id="f_geo_color" value="${f.color||'#C9A876'}"></div>
+          <button class="ghost" id="f_geo_delete" style="width:100%;margin-top:8px;color:#E5484D;">Delete Formation</button>
+        `;
+        const bind = (id,evt,fn)=>{ const e=document.getElementById(id); if(e) e.addEventListener(evt,fn); };
+        bind('f_geo_name','input', e=>{ f.name = e.target.value; render({skipInspector:true}); });
+        bind('f_geo_lith','input', e=>{ f.lithology = e.target.value; render({skipInspector:true}); });
+        bind('f_geo_top','input', e=>{ f.top = parseFloat(e.target.value)||0; render({skipInspector:true}); });
+        bind('f_geo_bot','input', e=>{ f.bot = parseFloat(e.target.value)||0; render({skipInspector:true}); });
+        bind('f_geo_color','input', e=>{ f.color = e.target.value; render({skipInspector:true}); });
+        bind('f_geo_delete','click', ()=>{
+          state.geology = state.geology.filter(x=>x.id!==f.id);
+          selectedGeologyId = null;
+          render();
+        });
+        return;
+      }
+    }
+    if (selectedTestingZoneId != null){
+      const z = state.testingZones.find(x=>x.id===selectedTestingZoneId);
+      if (z){
+        el.className='';
+        el.innerHTML = `
+          <div class="comp-title">${(z.name||z.testType||'Testing Zone').replace(/</g,'&lt;')}</div>
+          <div class="comp-type">Testing Zone</div>
+          <div class="insp-field"><label>Zone Name</label><input type="text" id="f_tz_name" value="${escAttr(z.name)}" placeholder="e.g. Zone 1"></div>
+          <div class="insp-field"><label>Test Type</label><input type="text" id="f_tz_type" value="${escAttr(z.testType)}" placeholder="e.g. DST"></div>
+          <div class="insp-row">
+            <div class="insp-field"><label>Top (m)</label><input type="number" id="f_tz_top" value="${z.top}"></div>
+            <div class="insp-field"><label>Bottom (m)</label><input type="number" id="f_tz_bot" value="${z.bot}"></div>
+          </div>
+          <div class="insp-field"><label>Color</label><input type="color" id="f_tz_color" value="${z.color||'#E85D75'}"></div>
+          <button class="ghost" id="f_tz_delete" style="width:100%;margin-top:8px;color:#E5484D;">Delete Testing Zone</button>
+        `;
+        const bind = (id,evt,fn)=>{ const e=document.getElementById(id); if(e) e.addEventListener(evt,fn); };
+        bind('f_tz_name','input', e=>{ z.name = e.target.value; render({skipInspector:true}); });
+        bind('f_tz_type','input', e=>{ z.testType = e.target.value; render({skipInspector:true}); });
+        bind('f_tz_top','input', e=>{ z.top = parseFloat(e.target.value)||0; render({skipInspector:true}); });
+        bind('f_tz_bot','input', e=>{ z.bot = parseFloat(e.target.value)||0; render({skipInspector:true}); });
+        bind('f_tz_color','input', e=>{ z.color = e.target.value; render({skipInspector:true}); });
+        bind('f_tz_delete','click', ()=>{
+          state.testingZones = state.testingZones.filter(x=>x.id!==z.id);
+          selectedTestingZoneId = null;
+          render();
+        });
+        return;
+      }
+    }
     if (selectedVolId != null){
       const allVolGroups = [...volumeGroups, ...((currentVolGroup && currentVolGroup.bands.length) ? [currentVolGroup] : [])];
       const vg = allVolGroups.find(g=>g.id===selectedVolId);
@@ -2825,7 +3344,7 @@
     el.innerHTML = `
       <div class="comp-title">${comp.label}</div>
       <div class="comp-type">${TYPES[comp.type].label}</div>
-      <div class="insp-field"><label>Label</label><input type="text" id="f_label" value="${comp.label}"></div>
+      <div class="insp-field"><label>Label</label><input type="text" id="f_label" value="${escAttr(comp.label)}"></div>
       ${comp.kind==='hanger' ? `
       <div class="insp-field"><label>Depth (m)${hangerLinerRange ? ` <span style="text-transform:none;">(${hangerLinerRange.min}\u2013${hangerLinerRange.max} m)</span>` : ''}</label>
         <input type="number" id="f_top" value="${comp.top}" step="1" ${hangerLinerRange ? `min="${hangerLinerRange.min}" max="${hangerLinerRange.max}"` : ''}>
@@ -2841,6 +3360,12 @@
       <div class="insp-row">
         <div class="insp-field"><label>Gun</label><input type="text" id="f_gun" value="${comp.gun||''}" placeholder="e.g. 4-1/2&quot; HSD"></div>
         <div class="insp-field"><label>Shot per Foot</label><input type="number" id="f_spf" value="${comp.spf||''}" step="1" placeholder="e.g. 6"></div>
+      </div>
+      <div class="insp-field"><label>Testing Zone</label>
+        <select id="f_testingZoneRef">
+          <option value="" ${comp.testingZoneId==null?'selected':''}>None</option>
+          ${state.testingZones.map(z=>`<option value="${z.id}" ${comp.testingZoneId===z.id?'selected':''}>${(z.name||z.testType||'Zone').replace(/</g,'&lt;')} (${z.top}\u2013${z.bot} m)</option>`).join('')}
+        </select>
       </div>
       ` : ''}
       ${comp.kind==='annularpacker' ? (()=>{
@@ -2887,14 +3412,14 @@
       ${comp.kind==='tubing' ? `
       <div class="insp-row">
         <div class="insp-field"><label>Weight (lb/ft)</label><input type="text" id="f_weight" value="${comp.weight}"></div>
-        <div class="insp-field"><label>Grade</label><input type="text" id="f_grade" value="${comp.grade}"></div>
+        <div class="insp-field"><label>Grade</label><input type="text" id="f_grade" value="${escAttr(comp.grade)}"></div>
       </div>
       <div class="insp-field"><label>Threads</label><input type="text" id="f_threads" value="${comp.threads||''}"></div>
       ` : ''}
       ${comp.kind==='casing' ? `
       <div class="insp-row">
         <div class="insp-field"><label>Weight (lb/ft)</label><input type="text" id="f_weight" value="${comp.weight}"></div>
-        <div class="insp-field"><label>Grade</label><input type="text" id="f_grade" value="${comp.grade}"></div>
+        <div class="insp-field"><label>Grade</label><input type="text" id="f_grade" value="${escAttr(comp.grade)}"></div>
       </div>
       <div class="insp-field"><label>Threads</label><input type="text" id="f_threads" value="${comp.threads||''}"></div>
       <label class="insp-checkbox"><input type="checkbox" id="f_cemented" ${comp.cemented?'checked':''}> Cemented</label>
@@ -2946,6 +3471,7 @@
     });
     bind('f_gun','input', e=>{ comp.gun=e.target.value; render({skipInspector:true}); });
     bind('f_spf','change', e=>{ comp.spf=e.target.value; render(); });
+    bind('f_testingZoneRef','change', e=>{ comp.testingZoneId = e.target.value ? parseInt(e.target.value) : null; render(); });
     bind('f_color','input', e=>{ comp.color=e.target.value; render({skipInspector:true}); });
     bind('f_weight','input', e=>{ comp.weight=e.target.value; render({skipInspector:true}); });
     bind('f_grade','input', e=>{ comp.grade=e.target.value; render({skipInspector:true}); });
@@ -3104,8 +3630,18 @@
   });
   document.getElementById('wellName').addEventListener('input', ()=>{});
   document.getElementById('clearAll').addEventListener('click', ()=>{
-    csConfirm('Clear all components?', ()=>{
-      state.components=[]; selectedId=null; selectedVolId=null; render();
+    csConfirm('Start a new project? This will permanently delete ALL saved designs in the Designs Manager, and clear the current components, Geology, and Testing Zones. This cannot be undone.', ()=>{
+      state.components = []; state.geology = []; state.testingZones = [];
+      state.totalDepth = 3200;
+      document.getElementById('wellName').value = 'Well-1';
+      document.getElementById('totalDepth').value = 3200;
+      document.getElementById('csVersion').value = '1.0';
+      document.getElementById('csNotes').value = '';
+      selectedId = null; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
+      currentlyLoadedManagerDesignId = null;
+      saveManagerDesigns([]); // wipe every saved design from the Designs Manager too
+      renderDesignSwitcher();
+      render();
     });
   });
   /* ---------------- API 5CT Casing Catalog ---------------- */
@@ -3307,7 +3843,37 @@
       });
     });
     updateDesignsManagerToolbar();
+    renderDesignSwitcher();
   }
+  // Quick-switch dropdown in the header — lets the user jump straight to a different saved
+  // design without opening the full Designs Manager, reusing the exact same load (and
+  // autosave-before-switching) logic as dmgrLoad.
+  function renderDesignSwitcher(){
+    const sel = document.getElementById('designSwitcher');
+    const designs = loadManagerDesigns().slice().sort((a,b)=>b.savedAt-a.savedAt);
+    sel.innerHTML = designs.map(d=>`<option value="${d.id}" ${d.id===currentlyLoadedManagerDesignId?'selected':''}>${(d.wellName||'Untitled Well').replace(/</g,'&lt;')}${d.designVersion?` v${d.designVersion}`:''}</option>`).join('');
+  }
+  document.getElementById('designSwitcher').addEventListener('change', e=>{
+    const id = e.target.value;
+    if (!id) return;
+    const d = loadManagerDesigns().find(x=>x.id===id);
+    if (!d) return;
+    if (currentlyLoadedManagerDesignId!=null && currentlyLoadedManagerDesignId!==id) autosaveCurrentlyLoadedDesign();
+    const data = d.data;
+    state.totalDepth = Math.max(50, parseFloat(data.totalDepth) || 3200);
+    document.getElementById('totalDepth').value = state.totalDepth;
+    document.getElementById('wellName').value = data.wellName || 'Well-1';
+    document.getElementById('csVersion').value = data.designVersion || '1.0';
+    document.getElementById('csNotes').value = data.notes || '';
+    state.components = normalizePointComponents(data.components.map(c=>({labelDx:0, labelDy:0, ...c})));
+    nextId = state.components.reduce((max,c)=>Math.max(max,(c.id||0)+1),1);
+    selectedId = null; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
+    volumeGroups = Array.isArray(data.volumeGroups) ? data.volumeGroups : [];
+    state.geology = Array.isArray(data.geology) ? data.geology : [];
+    state.testingZones = Array.isArray(data.testingZones) ? data.testingZones : [];
+    currentlyLoadedManagerDesignId = d.id;
+    render();
+  });
   document.getElementById('openDesignsManager').addEventListener('click', ()=>{
     selectedManagerDesignId = currentlyLoadedManagerDesignId;
     renderDesignsManagerList();
@@ -3329,6 +3895,8 @@
       theme: currentThemeKey,
       components: state.components,
       volumeGroups: volumeGroups,
+      geology: state.geology,
+      testingZones: state.testingZones,
     };
   }
   document.getElementById('saveCurrentToManager').addEventListener('click', ()=>{
@@ -3342,31 +3910,52 @@
   // leaves Well Name/Total Depth/Version/Notes as they were)
   document.getElementById('dmgrNew').addEventListener('click', ()=>{
     csConfirm('Start a new blank design? Any unsaved changes to the current design will be lost.', ()=>{
-      state.components = []; selectedId = null; selectedVolId = null; volumeGroups = [];
+      state.components = []; selectedId = null; selectedVolId = null; volumeGroups = []; state.geology = []; state.testingZones = []; selectedGeologyId = null; selectedTestingZoneId = null;
       state.totalDepth = 3200;
       document.getElementById('wellName').value = 'Well-1';
       document.getElementById('totalDepth').value = 3200;
       document.getElementById('csVersion').value = '1.0';
       document.getElementById('csNotes').value = '';
       currentlyLoadedManagerDesignId = null;
+      renderDesignSwitcher();
       render();
       document.getElementById('designsManagerOverlay').style.display = 'none';
     });
   });
+  // Autosaves whatever design is currently loaded on the canvas back into its own list
+  // entry - used right before switching to a different design, so modifications are never
+  // silently lost just because the user didn't remember to click Save first.
+  function autosaveCurrentlyLoadedDesign(){
+    if (currentlyLoadedManagerDesignId == null) return;
+    const list = loadManagerDesigns();
+    const d = list.find(x=>x.id===currentlyLoadedManagerDesignId);
+    if (!d) return;
+    const data = collectCurrentDesignData();
+    d.data = data;
+    d.wellName = data.wellName;
+    d.notes = data.notes;
+    d.designVersion = data.designVersion;
+    d.savedAt = Date.now();
+    saveManagerDesigns(list);
+  }
   document.getElementById('dmgrLoad').addEventListener('click', ()=>{
     const d = loadManagerDesigns().find(x=>x.id===selectedManagerDesignId);
     if (!d) return;
+    if (currentlyLoadedManagerDesignId!=null && currentlyLoadedManagerDesignId!==d.id) autosaveCurrentlyLoadedDesign();
     const data = d.data;
     state.totalDepth = Math.max(50, parseFloat(data.totalDepth) || 3200);
     document.getElementById('totalDepth').value = state.totalDepth;
     document.getElementById('wellName').value = data.wellName || 'Well-1';
     document.getElementById('csVersion').value = data.designVersion || '1.0';
     document.getElementById('csNotes').value = data.notes || '';
-    state.components = data.components.map(c=>({labelDx:0, labelDy:0, ...c}));
+    state.components = normalizePointComponents(data.components.map(c=>({labelDx:0, labelDy:0, ...c})));
     nextId = state.components.reduce((max,c)=>Math.max(max,(c.id||0)+1),1);
-    selectedId = null; selectedVolId = null;
+    selectedId = null; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
     volumeGroups = Array.isArray(data.volumeGroups) ? data.volumeGroups : [];
+    state.geology = Array.isArray(data.geology) ? data.geology : [];
+    state.testingZones = Array.isArray(data.testingZones) ? data.testingZones : [];
     currentlyLoadedManagerDesignId = d.id;
+    renderDesignSwitcher();
     render();
     document.getElementById('designsManagerOverlay').style.display = 'none';
   });
@@ -3471,6 +4060,40 @@
     renderVolumeTable();
     render();
   });
+  document.getElementById('openGeology').addEventListener('click', ()=>{
+    renderGeologyTable();
+    document.getElementById('geologyOverlay').style.display = 'flex';
+  });
+  document.getElementById('closeGeology').addEventListener('click', ()=>{
+    document.getElementById('geologyOverlay').style.display = 'none';
+  });
+  document.getElementById('geologyOverlay').addEventListener('click', e=>{
+    if (e.target.id==='geologyOverlay') e.target.style.display = 'none';
+  });
+  document.getElementById('addGeologyRow').addEventListener('click', ()=>{
+    const lastBot = state.geology.length ? Math.max(...state.geology.map(f=>f.bot)) : 0;
+    const color = GEOLOGY_COLORS[state.geology.length % GEOLOGY_COLORS.length];
+    state.geology.push({ id: nextGeologyId++, name:'', lithology:'', top: lastBot, bot: lastBot+200, color });
+    renderGeologyTable();
+    render();
+  });
+  document.getElementById('openTestingZones').addEventListener('click', ()=>{
+    renderTestingZonesTable();
+    document.getElementById('testingZonesOverlay').style.display = 'flex';
+  });
+  document.getElementById('closeTestingZones').addEventListener('click', ()=>{
+    document.getElementById('testingZonesOverlay').style.display = 'none';
+  });
+  document.getElementById('testingZonesOverlay').addEventListener('click', e=>{
+    if (e.target.id==='testingZonesOverlay') e.target.style.display = 'none';
+  });
+  document.getElementById('addTestingZoneRow').addEventListener('click', ()=>{
+    const lastBot = state.testingZones.length ? Math.max(...state.testingZones.map(z=>z.bot)) : 0;
+    const color = TESTING_ZONE_COLORS[state.testingZones.length % TESTING_ZONE_COLORS.length];
+    state.testingZones.push({ id: nextTestingZoneId++, name:'', testType:'', top: lastBot, bot: lastBot+100, color });
+    renderTestingZonesTable();
+    render();
+  });
   (function makeCementVolumeDraggable(){
     const box = document.getElementById('cementVolumeBox');
     const handle = document.getElementById('cementVolumeHeader');
@@ -3568,7 +4191,7 @@
       labelDx: 0, labelDy: 0
     };
     state.components.push(comp);
-    selectedId = comp.id; selectedVolId = null;
+    selectedId = comp.id; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
     render();
     closeManualCasingModal();
   }
@@ -3601,18 +4224,16 @@
   });
 
   function saveDesign(){
-    const data = {
-      format: 'wellbore-sketch',
-      version: 1,
-      wellName: document.getElementById('wellName').value || 'Well-1',
-      totalDepth: state.totalDepth,
-      designVersion: document.getElementById('csVersion').value || '1.0',
-      notes: document.getElementById('csNotes').value,
-      theme: currentThemeKey,
-      components: state.components
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-    downloadBlob(blob, sanitizeName()+'.json');
+    const designs = loadManagerDesigns();
+    if (!designs.length){
+      alert('There are no saved designs in the Designs Manager yet. Use "Save Current Design to List" there first.');
+      return;
+    }
+    const project = { format: 'thinker-project', version: 1, exportedAt: Date.now(), designs, geology: state.geology, testingZones: state.testingZones };
+    const blob = new Blob([JSON.stringify(project, null, 2)], {type:'application/json'});
+    const now = new Date();
+    const dateStr = String(now.getDate()).padStart(2,'0') + String(now.getMonth()+1).padStart(2,'0') + String(now.getFullYear()).slice(-2);
+    downloadBlob(blob, `Project_${sanitizeName()}_${state.totalDepth}_${dateStr}.json`);
   }
 
   function loadCustomExample(){
@@ -3635,27 +4256,21 @@
         alert('That file isn\'t valid JSON and could not be loaded.');
         return;
       }
-      if (!data || !Array.isArray(data.components)){
-        alert('That file doesn\'t look like a saved well design.');
+      if (!data || !Array.isArray(data.designs)){
+        alert('That file doesn\'t look like a saved project (expected a list of designs).');
         return;
       }
-      state.totalDepth = Math.max(50, parseFloat(data.totalDepth) || 3200);
-      document.getElementById('totalDepth').value = state.totalDepth;
-      document.getElementById('wellName').value = data.wellName || 'Well-1';
-      document.getElementById('csNotes').value = data.notes || '';
-      document.getElementById('csVersion').value = data.designVersion || '1.0';
-      state.components = data.components.map(c => ({
-        labelDx: 0, labelDy: 0, ...c
-      }));
-      nextId = state.components.reduce((max,c)=> Math.max(max, (c.id||0)+1), 1);
-      selectedId = null; selectedVolId = null;
-      // remember this design so "Load Example" reloads it from now on — persisted across reloads
-      customExample = JSON.parse(JSON.stringify(data));
-      saveCustomExample(customExample);
-      if (data.theme && BG_THEMES[data.theme]){
-        applyTheme(data.theme);
-      } else {
+      // fresh ids on import, so loading the same project file twice (or one that overlaps
+      // with designs already saved here) never collides with or silently overwrites anything
+      const imported = data.designs.map(d=>({ ...d, id: 'd'+Date.now()+Math.random().toString(36).slice(2,7) }));
+      const list = loadManagerDesigns().concat(imported);
+      if (saveManagerDesigns(list)){
+        if (Array.isArray(data.geology)) state.geology = data.geology;
+        if (Array.isArray(data.testingZones)) state.testingZones = data.testingZones;
+        renderDesignSwitcher();
+        renderDesignsManagerList();
         render();
+        alert(`Imported ${imported.length} design${imported.length===1?'':'s'} into the Designs Manager.`);
       }
     };
     reader.onerror = ()=> alert('Could not read that file.');
@@ -3669,12 +4284,14 @@
       document.getElementById('totalDepth').value = state.totalDepth;
       document.getElementById('wellName').value = data.wellName || 'Well-1';
       document.getElementById('csNotes').value = data.notes || '';
+      state.geology = Array.isArray(data.geology) ? data.geology : [];
+      state.testingZones = Array.isArray(data.testingZones) ? data.testingZones : [];
       document.getElementById('csVersion').value = data.designVersion || '1.0';
-      state.components = data.components.map(c => ({
+      state.components = normalizePointComponents(data.components.map(c => ({
         labelDx: 0, labelDy: 0, ...c
-      }));
+      })));
       nextId = state.components.reduce((max,c)=> Math.max(max, (c.id||0)+1), 1);
-      selectedId = null; selectedVolId = null;
+      selectedId = null; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
       if (data.theme && BG_THEMES[data.theme]){
         applyTheme(data.theme);
       } else {
@@ -3696,11 +4313,11 @@
         cemented: TYPES[type].kind==='casing', cementTop: cementTop!=null?cementTop:top
       });
     };
-    add('conductor', 0, 50, 20, '94#', 'X-52', 0);
-    add('surface', 0, 800, 13.375, '54.5#', 'K-55', 0);
-    add('intermediate', 0, 2200, 9.625, '43.5#', 'L-80', 1200);
-    add('production', 1900, 3200, 7, '29#', 'P-110', 1900);
-    state.components.push({id:nextId++, type:'tubing', kind:'tubing', label:'Production Tubing', top:0, bot:3050, od:3.5, innerDiameter:TYPES.tubing.id, weight:'9.3#', grade:'L-80', color:TYPES.tubing.color, cemented:false, cementTop:null});
+    add('conductor', 0, 50, 20, '94', 'X-52', 0);
+    add('surface', 0, 800, 13.375, '54.5', 'K-55', 0);
+    add('intermediate', 0, 2200, 9.625, '43.5', 'L-80', 1200);
+    add('production', 1900, 3200, 7, '29', 'P-110', 1900);
+    state.components.push({id:nextId++, type:'tubing', kind:'tubing', label:'Production Tubing', top:0, bot:3050, od:3.5, innerDiameter:TYPES.tubing.id, weight:'9.3', grade:'L-80', color:TYPES.tubing.color, cemented:false, cementTop:null});
     state.components.push({id:nextId++, type:'packer', kind:'packer', label:'Production Packer', top:3050, bot:3050, od:5, weight:'', grade:'', color:TYPES.packer.color, cemented:false, cementTop:null});
     state.components.push({id:nextId++, type:'perf', kind:'perf', label:'Perforations', top:3100, bot:3160, od:0, weight:'', grade:'', color:TYPES.perf.color, cemented:false, cementTop:null});
     selectedId=null;
@@ -4082,6 +4699,7 @@
   /* ---------------- init ---------------- */
   renderSwatches();
   loadExample();
+  renderDesignSwitcher();
   clearTimeout(historyDebounceTimer);
   pushHistory(); // capture the initial state immediately as the undo baseline
   window.__renderCasingSheet = render;
@@ -4294,6 +4912,9 @@
     return Math.max(split, split + (relBhaY/bhaH) * bhaSpan);
   }
   function dsRound1(v){ return Math.round(v*10)/10; }
+  function escAttr(v){
+    return String(v==null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  }
   // Standard steel tube linear weight formula (lb/ft), OD/ID in inches — the same formula used
   // industry-wide for drill collar weight: W = 10.69 x t x (OD - t), where t = wall thickness
   function dsFmt2(v){ return (v==null || v==='' || isNaN(v)) ? '' : Number(v).toFixed(2); }
@@ -5857,7 +6478,7 @@
     const torqueNm = comp.torque!=null ? dsFmtInt(comp.torque * 1.35582) : null;
     el.innerHTML = `
       <div class="insp-section-header">Label</div>
-      <div class="insp-field"><label>Label</label><input type="text" id="ds_f_label" value="${comp.label}"></div>
+      <div class="insp-field"><label>Label</label><input type="text" id="ds_f_label" value="${escAttr(comp.label)}"></div>
       <div class="insp-row">
         <div class="insp-field"><label>Top MD (m)</label><input type="number" id="ds_f_top" value="${comp.top}" step="1"></div>
         <div class="insp-field"><label>Bottom MD (m)</label><input type="number" id="ds_f_bot" value="${comp.bot}" step="1"></div>
@@ -5990,7 +6611,7 @@
     const isCustomGrade = comp.gradeCustomMode || (comp.grade && !standardGrades.includes(comp.grade));
     el.innerHTML = `
       <div class="insp-section-header">Label</div>
-      <div class="insp-field"><label>Label</label><input type="text" id="ds_f_label" value="${comp.label}"></div>
+      <div class="insp-field"><label>Label</label><input type="text" id="ds_f_label" value="${escAttr(comp.label)}"></div>
       <div class="insp-row">
         <div class="insp-field"><label>Top MD (m)</label><input type="number" id="ds_f_top" value="${comp.top}" step="1"></div>
         <div class="insp-field"><label>Bottom MD (m)</label><input type="number" id="ds_f_bot" value="${comp.bot}" step="1"></div>
@@ -6020,7 +6641,7 @@
         </select></div>
         <div class="insp-field"><label>Weight (lb/ft)</label><input type="text" value="${weight}" disabled title="Calculated: average of the top-spec and bottom-spec weight, assuming equal length for each"></div>
       </div>
-      ${isCustomGrade ? `<div class="insp-field"><label>Custom Grade</label><input type="text" id="ds_f_xograde_custom" value="${comp.grade}"></div>` : ''}
+      ${isCustomGrade ? `<div class="insp-field"><label>Custom Grade</label><input type="text" id="ds_f_xograde_custom" value="${escAttr(comp.grade)}"></div>` : ''}
       <div class="insp-field"><label>Tensile Strength (${dsTensileUnit==='t'?'t':'lbf'})</label>
         <div style="display:flex;gap:6px;">
           <input type="text" value="${dsFmtTensile(dsCrossoverTensile(comp))}" disabled title="The lower of the top and bottom connections' carrying capacity \u2014 the weaker end governs" style="flex:1;">
@@ -6093,7 +6714,7 @@
     const isPoint = !!DS_TYPES[comp.type]?.point;
     const isCrossover = comp.type==='crossover';
     el.innerHTML = `
-      <div class="insp-field"><label>Label</label><input type="text" id="ds_f_label" value="${comp.label}"></div>
+      <div class="insp-field"><label>Label</label><input type="text" id="ds_f_label" value="${escAttr(comp.label)}"></div>
       <div class="insp-row">
         <div class="insp-field"><label>Top MD (m)</label><input type="number" id="ds_f_top" value="${comp.top}" step="1"></div>
         ${isCrossover
@@ -6145,7 +6766,7 @@
             ${standardGrades.map(g=>`<option value="${g}" ${comp.grade===g?'selected':''}>${g}</option>`).join('')}
             <option value="__custom__" ${isCustomGrade?'selected':''}>Custom\u2026</option>
           </select></div>
-          ${isCustomGrade ? `<div class="insp-field"><label>Custom Grade</label><input type="text" id="ds_f_grade_custom" value="${comp.grade}"></div>` : ''}
+          ${isCustomGrade ? `<div class="insp-field"><label>Custom Grade</label><input type="text" id="ds_f_grade_custom" value="${escAttr(comp.grade)}"></div>` : ''}
           <div class="insp-field"><label>Tensile Strength (${dsTensileUnit==='t'?'t':'lbf'})</label><div style="display:flex;gap:4px;align-items:center;">
             <input type="text" value="${dsFmtTensile(comp.tensileLbf)}" disabled title="From API Spec 7 / catalog data" style="flex:1;">
             <select id="ds_f_tensileunit" style="width:52px;">
@@ -6164,7 +6785,7 @@
             ${casingGrades.map(g=>`<option value="${g}" ${comp.grade===g?'selected':''}>${g}</option>`).join('')}
             <option value="__custom__" ${isCustomGrade?'selected':''}>Custom\u2026</option>
           </select></div>
-          ${isCustomGrade ? `<div class="insp-field"><label>Custom Grade</label><input type="text" id="ds_f_grade_custom" value="${comp.grade}"></div>` : ''}
+          ${isCustomGrade ? `<div class="insp-field"><label>Custom Grade</label><input type="text" id="ds_f_grade_custom" value="${escAttr(comp.grade)}"></div>` : ''}
           <div class="insp-field"><label>Threads</label><input type="text" id="ds_f_threadstext" value="${comp.threadsText}" placeholder="e.g. BTC, LTC, STC"></div>
         </div>`;
       })() : ''}
@@ -6730,7 +7351,7 @@
         <td style="text-align:center;cursor:grab;user-select:none;" class="table-drag-handle" title="Drag to reorder">
           <span style="opacity:0.5;">&#8942;&#8942;</span> <span style="font-weight:700;">${idx+1}</span>
         </td>
-        <td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${c.color};margin-right:6px;vertical-align:middle;"></span><input type="text" class="table-cell-input" data-field="label" value="${c.label}" style="width:110px;"></td>
+        <td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${c.color};margin-right:6px;vertical-align:middle;"></span><input type="text" class="table-cell-input" data-field="label" value="${escAttr(c.label)}" style="width:110px;"></td>
         <td>${(DS_TYPES[c.type]?.label)||c.type}</td>
         <td><input type="number" class="table-cell-input" data-field="top" value="${c.top}" step="0.1" style="width:70px;" ${isFirst?'':'disabled title="Locked to previous component bottom"'}></td>
         <td><input type="number" class="table-cell-input" value="${c.bot}" style="width:70px;" disabled title="Derived from Top plus Length"></td>
@@ -7400,6 +8021,9 @@
 
 /* ================= BOP Configuration sheet ================= */
 (function(){
+  function escAttr(v){
+    return String(v==null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  }
   let bopStack = []; // { id, type, label, pressureRating, size, color, heightM }
   let selectedBopId = null;
   let nextBopId = 1;
@@ -13684,7 +14308,7 @@
       return `
       <div style="display:flex;gap:6px;align-items:center;background:var(--panel-2);border-radius:4px;padding:6px 8px;">
         <span style="width:10px;height:10px;border-radius:2px;background:${c.color};flex-shrink:0;"></span>
-        <input type="text" class="table-cell-input bop-label-input" data-bop-id="${c.id}" value="${c.label}" style="width:140px;">
+        <input type="text" class="table-cell-input bop-label-input" data-bop-id="${c.id}" value="${escAttr(c.label)}" style="width:140px;">
         <input type="number" class="table-cell-input bop-height-input" data-bop-id="${c.id}" value="${heightVal}" step="0.1" min="0.1" title="Height (m)" style="width:55px;">
         <select class="table-cell-input bop-size-input" data-bop-id="${c.id}" title="API 6A nominal flange size" style="width:78px;">${sizeOpts}</select>
         <select class="table-cell-input bop-rating-input" data-bop-id="${c.id}" title="API pressure rating" style="width:60px;">${ratingOpts}</select>
@@ -13954,22 +14578,22 @@
       <div class="insp-row">
         <div class="insp-field">
           <label>Manufacturer</label>
-          <input type="text" id="bopInspManufacturer" value="${c.manufacturer||''}">
+          <input type="text" id="bopInspManufacturer" value="${escAttr(c.manufacturer||'')}">
         </div>
         <div class="insp-field">
           <label>Serial Number</label>
-          <input type="text" id="bopInspSerialNumber" value="${c.serialNumber||''}">
+          <input type="text" id="bopInspSerialNumber" value="${escAttr(c.serialNumber||'')}">
         </div>
       </div>
       <div class="insp-field">
         <label>Model</label>
-        <input type="text" id="bopInspModel" value="${c.model||''}">
+        <input type="text" id="bopInspModel" value="${escAttr(c.model||'')}">
       </div>
     `;
     const bodyHtml = hasTopBottomSpec ? `
       <div class="insp-field">
         <label>Label</label>
-        <input type="text" id="bopInspLabel" value="${c.label}">
+        <input type="text" id="bopInspLabel" value="${escAttr(c.label)}">
       </div>
       ${serialMfgFieldsHtml}
       <div class="insp-field">
@@ -14007,7 +14631,7 @@
     ` : `
       <div class="insp-field">
         <label>Label</label>
-        <input type="text" id="bopInspLabel" value="${c.label}">
+        <input type="text" id="bopInspLabel" value="${escAttr(c.label)}">
       </div>
       ${serialMfgFieldsHtml}
       <div class="insp-field">
