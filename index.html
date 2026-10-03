@@ -591,6 +591,23 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="bitsRecordsOverlay" style="display:none;">
+  <div class="modal-box" style="width:980px; max-width:97vw; max-height:90vh;">
+    <div class="modal-header">
+      <h3>Bits Records</h3>
+      <button id="closeBitsRecords" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
+    </div>
+    <div class="modal-hint">Bit run log for this well. Depths in MD, m; footage is calculated automatically. For a re-run of a bit already in the list, give it a Bit No. ending in "RR" (e.g. "3RR") and its Size/Type/IADC/Manufacturer/Serial No. are pulled from that bit's first run automatically.</div>
+    <button id="addBitsRecordRow" class="ghost" style="width:100%;margin:8px 0;">+ Add Bit Record</button>
+    <div class="modal-table-wrap" style="max-height:60vh;">
+      <table class="modal-table" id="bitsRecordsTable">
+        <thead><tr><th>#</th><th>Bit No.</th><th>Size (in)</th><th>Type</th><th>IADC</th><th>Manufacturer</th><th>Serial No.</th><th>Depth In (m)</th><th>Depth Out (m)</th><th>Footage (m)</th><th>Hours</th><th>Dull Grade</th><th>Remarks</th><th></th></tr></thead>
+        <tbody id="bitsRecordsTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="testingZonesOverlay" style="display:none;">
   <div class="modal-box" style="width:720px; max-width:97vw; max-height:90vh;">
     <div class="modal-header">
@@ -601,7 +618,7 @@
     <button id="addTestingZoneRow" class="ghost" style="width:100%;margin:8px 0;">+ Add Testing Zone</button>
     <div class="modal-table-wrap" style="max-height:60vh;">
       <table class="modal-table" id="testingZonesTable">
-        <thead><tr><th>#</th><th>Zone Name</th><th>Test Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Height (m)</th><th>Color</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Zone Name</th><th>Test Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Height (m)</th><th>Color</th><th>Hide</th><th></th></tr></thead>
         <tbody id="testingZonesTbody"></tbody>
       </table>
     </div>
@@ -664,6 +681,7 @@
     <button id="openTableView" class="ghost toolbar-btn">Table View</button>
     <button id="openVolumeTable" class="ghost toolbar-btn">Volume Table</button>
     <button id="openGeology" class="ghost toolbar-btn">Geology</button>
+    <button id="openBitsRecords" class="ghost toolbar-btn">Bits Records</button>
     <hr class="separator">
     <button id="exportSvg" class="toolbar-btn">Export SVG</button>
     <button id="exportPng" class="toolbar-btn">Export PNG</button>
@@ -671,6 +689,7 @@
     <hr class="separator">
     <button id="splitScaleToggle" class="ghost toolbar-btn" title="Compress the shallow zone and expand the deeper zone for detail">Split Scale: Off</button>
     <button id="volumeCalcToggle" class="ghost toolbar-btn" title="Click a band in the diagram to measure its volume">Volume Calc: Off</button>
+    <button id="testingZonesToggle" class="ghost toolbar-btn" title="Show or hide Testing Zones bands, ribbons and labels in the drawing">Testing Zones: On</button>
   </div>
   <div class="palette" id="palette">
     <!-- chips injected by JS, grouped by category -->
@@ -1015,7 +1034,7 @@
   </div>
 </div>
 <div class="modal-overlay" id="bopTableOverlay" style="display:none;">
-  <div class="modal-box" style="width:820px; max-width:97vw; max-height:90vh;">
+  <div class="modal-box" style="width:1100px; max-width:97vw; max-height:90vh;">
     <div class="modal-header">
       <h3>BOP Stack Table</h3>
       <button id="closeBopTable" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
@@ -1023,7 +1042,7 @@
     <div class="modal-hint">Top to bottom, matching the stack order in the drawing area.</div>
     <div class="modal-table-wrap" style="max-height:60vh;">
       <table class="modal-table" id="bopTableTable">
-        <thead><tr><th>#</th><th>Label</th><th>Height (m)</th><th>Size</th><th>Rating</th><th>Seal Ring</th><th>Ram Config</th><th>Position</th></tr></thead>
+        <thead><tr><th>#</th><th>Label</th><th>Height (m)</th><th>Size</th><th>Rating</th><th>Seal Ring</th><th>Ram Config</th><th>Make</th><th>Serial Number</th><th>Position</th></tr></thead>
         <tbody id="bopTableTbody"></tbody>
       </table>
     </div>
@@ -1078,6 +1097,17 @@
     hanger:       { label:'Liner Hanger',       kind:'hanger', od:5,     color:'#8A6FD1', topFrac:0.55, botFrac:0.55 },
     annularpacker:{ label:'Annular Casing Packer', kind:'annularpacker', od:5, color:'#4FC3B0', topFrac:0.5,  botFrac:0.5  },
     note:         { label:'Note',               kind:'note',   od:0,     color:'#F2C94C', topFrac:0.4,  botFrac:0.4  },
+    cementing:         { label:'Cementing',          kind:'drillingactivity', od:0, color:'#4FA8C9', topFrac:0.3, botFrac:0.3 },
+    logging:           { label:'Logging',            kind:'drillingactivityinterval', od:0, color:'#6FB88E', topFrac:0.28, botFrac:0.32 },
+    coring:            { label:'Coring',             kind:'drillingactivityinterval', od:0, color:'#8A6FD1', topFrac:0.28, botFrac:0.32 },
+    fishing:           { label:'Fishing',            kind:'drillingactivity', od:0, color:'#C77D3E', topFrac:0.3, botFrac:0.3 },
+    sidetrack:         { label:'Sidetrack',          kind:'drillingactivity', od:0, color:'#4FC3B0', topFrac:0.3, botFrac:0.3 },
+    stuckpipe:         { label:'Stuck Pipe',         kind:'drillingactivity', od:0, color:'#E5484D', topFrac:0.3, botFrac:0.3 },
+    lostcirculation:   { label:'Lost Circulation',   kind:'drillingactivity', od:0, color:'#D98E3B', topFrac:0.3, botFrac:0.3 },
+    kick:              { label:'Kick',               kind:'drillingactivity', od:0, color:'#FF4D4D', topFrac:0.3, botFrac:0.3 },
+    wellboreinstability:{ label:'Wellbore Instability', kind:'drillingactivity', od:0, color:'#A84448', topFrac:0.3, botFrac:0.3 },
+    dfit:              { label:'DFIT',                kind:'drillingactivity', od:0, color:'#1E88E5', topFrac:0.3, botFrac:0.3 },
+    mudchange:         { label:'Mud Change',           kind:'drillingactivity', od:0, color:'#8D6E63', topFrac:0.3, botFrac:0.3 },
     perf:         { label:'Perforations',       kind:'perf',   od:0,     color:'#C1502E', topFrac:0.92, botFrac:0.96 },
     openhole:     { label:'Open Hole',          kind:'openhole', od:8.5, color:'#7F93A3', topFrac:0.7,  botFrac:1.0  },
   };
@@ -1087,13 +1117,18 @@
     totalDepth: 3200,
     components: [], // {id,type,label,top,bot,od,weight,grade,color,cementTop,cemented}
     geology: [], // formation tops: {id,name,lithology,top,bot,color}
-    testingZones: [] // well test intervals: {id,name,testType,top,bot,color}
+    testingZones: [], // well test intervals: {id,name,testType,top,bot,color}
+    bitsRecords: [], // bit run log: {id,bitNo,size,type,iadc,manufacturer,serialNo,depthIn,depthOut,hours,dullGrade,remarks}. A rerun's Bit No. ends in "RR" (e.g. "3RR") — its size/type/iadc/manufacturer/serialNo are synced from that bit's first run, not stored independently.
+    // per-Section casing/shoe pressure-test data, keyed by sectionKey (String(sectionNumber), or 'none'):
+    // {casingPressure (bar), casingFluidDensity (sg), shoePressure (bar), shoeFluidDensity (sg)}
+    sectionTestData: {}
   };
   let nextId = 1;
   let nextGeologyId = 1;
   const GEOLOGY_COLORS = ['#C9A876','#A8925C','#8B7355','#D4B896','#B5A582','#9C8862','#7D6B4E','#E0C9A6'];
   let nextTestingZoneId = 1;
   const TESTING_ZONE_COLORS = ['#E85D75','#5DA9E8','#E8B85D','#7ED88F','#B87EE8','#E87E5D'];
+  let nextBitId = 1;
   let selectedId = null;
   let selectedVolId = null; // id of the currently selected volume group, shown in the Inspector
   let selectedGeologyId = null; // id of the currently selected formation, shown in the Inspector
@@ -1165,6 +1200,64 @@
   const PX_PER_IN = 7.2; // half-width scale: halfWidthPx = od * PX_PER_IN / 2
   let SVG_H = 780;
   let splitScale = false; // when on, the top and bottom zones are compressed and the middle zone is expanded
+  let testingZonesVisible = true; // when off, Testing Zones bands/ribbons/labels are hidden from the drawing
+  // Horizontal lane offset (in px, from CENTER_X) for each Drilling Activity component this
+  // render pass, so markers/intervals that occupy the same depth or overlapping interval are
+  // spread out side by side instead of drawing directly on top of one another. Recomputed at
+  // the top of every render() call; see computeActivityLaneOffsets().
+  let activityLaneOffsetById = new Map();
+  const ACTIVITY_LANE_SPACING = 16;
+  function computeActivityLaneOffsets(){
+    activityLaneOffsetById = new Map();
+    // Label TEXT overlap is already handled separately by resolveLabelOverlaps (it nudges
+    // label groups down after render, based on their real measured height). So this only
+    // needs to catch the case that function doesn't: the markers/ticks themselves — the
+    // dots and tick lines drawn right on the wellbore centerline — actually sharing depth.
+    // Judged in MD space (not screen pixels), so it means what it says regardless of zoom
+    // or how long the well is: items only stack when they genuinely occupy the same depth
+    // or an overlapping interval, never just because they land close together on screen.
+    const epsilon = Math.max(1, state.totalDepth * 0.004); // "same depth" tolerance, e.g. ~1.3m on a 320m well, ~26m on a 6500m well
+    const items = state.components
+      .filter(c=> (c.kind==='drillingactivity' || c.kind==='drillingactivityinterval') && !c.hidden)
+      .map(c=>{
+        const lo = Math.min(c.top, c.bot), hi = Math.max(c.top, c.bot);
+        return { id: c.id, yLo: lo-epsilon, yHi: hi+epsilon };
+      })
+      .sort((a,b)=> a.yLo-b.yLo);
+    // group into clusters of mutually-touching items (a standard merge-overlapping-intervals
+    // sweep) rather than coloring lanes one at a time, so each cluster's final size is known
+    // before it's placed — that's what lets the group be centered on the wellbore as a whole
+    // (…,-16,0,+16,…) instead of growing lopsidedly off to one side as items are added.
+    let cluster = [], clusterEnd = -Infinity;
+    const clusters = [];
+    items.forEach(item=>{
+      if (cluster.length && item.yLo >= clusterEnd){ clusters.push(cluster); cluster = []; }
+      cluster.push(item);
+      clusterEnd = Math.max(clusterEnd, item.yHi);
+    });
+    if (cluster.length) clusters.push(cluster);
+    clusters.forEach(group=>{
+      // Greedy column-packing (first-fit by earliest top, the standard optimal algorithm for
+      // interval scheduling / "minimum meeting rooms") rather than handing every item in the
+      // cluster its own lane. Two items only need separate columns when their depths actually
+      // overlap each other — if they don't (even though both got pulled into this cluster via
+      // a third, wider-spanning item), they share a column and stack vertically at their own
+      // true depths instead of needlessly spreading sideways. group is already sorted by yLo.
+      const colEnds = []; // yHi of the item most recently placed in each column
+      const colOf = new Map();
+      group.forEach(item=>{
+        let col = colEnds.findIndex(end => item.yLo >= end);
+        if (col === -1){ col = colEnds.length; colEnds.push(item.yHi); }
+        else { colEnds[col] = item.yHi; }
+        colOf.set(item.id, col);
+      });
+      const numCols = colEnds.length;
+      group.forEach(item=>{
+        const offset = (colOf.get(item.id) - (numCols-1)/2) * ACTIVITY_LANE_SPACING;
+        activityLaneOffsetById.set(item.id, offset);
+      });
+    });
+  }
   let manualSplitTopDepth = null; // user-dragged top break depth; null = default (20% of total depth)
   let manualSplitBottomDepth = null; // user-dragged bottom break depth; null = default (80% of total depth)
   let scaleBreakDragY = null; // temporary marker Y position while actively dragging (top or bottom)
@@ -1368,6 +1461,7 @@
   const PALETTE_GROUPS = [
     { label: 'Casings', keys: ['conductor','surface','intermediate','production','liner','tieback','custom'] },
     { label: 'Wellbore Features', keys: ['tubing','packer','hanger','annularpacker','perf','openhole','note'] },
+    { label: 'Drilling Activity', keys: ['cementing','logging','coring','fishing','sidetrack','stuckpipe','lostcirculation','kick','wellboreinstability','dfit','mudchange'] },
   ];
   PALETTE_GROUPS.forEach((group, gi)=>{
     const header = document.createElement('button');
@@ -1412,7 +1506,7 @@
   function addComponent(typeKey, dropMd){
     const def = TYPES[typeKey];
     let top, bot;
-    if (def.kind === 'packer' || def.kind === 'hanger' || def.kind === 'annularpacker' || def.kind === 'note'){
+    if (def.kind === 'packer' || def.kind === 'hanger' || def.kind === 'annularpacker' || def.kind === 'note' || def.kind === 'drillingactivity'){
       top = bot = (dropMd!=null ? dropMd : def.topFrac*state.totalDepth);
     } else if (typeKey === 'openhole'){
       const deepestShoe = state.components
@@ -1466,7 +1560,7 @@
   // from an older version of a saved file, rather than silently rendering a phantom length.
   function normalizePointComponents(components){
     return components.map(c=>{
-      if (['packer','hanger','annularpacker','note'].includes(c.kind) && c.bot !== c.top){
+      if (['packer','hanger','annularpacker','note','drillingactivity'].includes(c.kind) && c.bot !== c.top){
         return { ...c, bot: c.top };
       }
       return c;
@@ -1652,12 +1746,27 @@
         const sectionKey = c.sectionNumber!=null ? String(c.sectionNumber) : 'none';
         sectionHidden = !!hiddenTableSections[sectionKey];
         const headerText = c.sectionNumber!=null ? `Section ${c.sectionNumber}` : 'No Section Assigned';
+        const td = (state.sectionTestData[sectionKey] = state.sectionTestData[sectionKey] || {});
+        const testField = (label, key, unit)=>`
+          <span style="display:inline-flex;align-items:center;gap:4px;text-transform:none;letter-spacing:normal;font-weight:400;">
+            <span style="color:var(--text-muted);">${label}</span>
+            <input type="number" class="table-cell-input section-test-input" data-section-key="${sectionKey}" data-field="${key}" value="${td[key]!=null?td[key]:''}" placeholder="—" style="width:64px;">
+            <span style="color:var(--text-muted);font-size:10px;">${unit}</span>
+          </span>`;
         headerRow = `<tr class="table-view-section-header"><td colspan="14" style="font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:0.05em;color:var(--text-muted);background:var(--panel);padding:6px 10px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-weight:400;">
-            <input type="checkbox" class="section-hide-toggle" data-section-key="${sectionKey}" ${sectionHidden?'checked':''}>
-            Hide
-          </label>
-          <span style="margin-left:14px;">${headerText}</span>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-weight:400;">
+              <input type="checkbox" class="section-hide-toggle" data-section-key="${sectionKey}" ${sectionHidden?'checked':''}>
+              Hide
+            </label>
+            <span>${headerText}</span>
+          </div>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 20px;margin-top:6px;">
+            ${testField('Casing Pressure Test','casingPressure','bar')}
+            ${testField('Testing Fluid Density','casingFluidDensity','sg')}
+            ${testField('Casing Shoe Test Pressure','shoePressure','bar')}
+            ${testField('Shoe Testing Fluid Density','shoeFluidDensity','sg')}
+          </div>
         </td></tr>`;
       }
       // note: sectionHidden no longer suppresses rows here — it now controls diagram
@@ -1755,6 +1864,14 @@
         render();
       });
     });
+    tbody.querySelectorAll('.section-test-input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const key = inp.dataset.sectionKey;
+        const field = inp.dataset.field;
+        const td = (state.sectionTestData[key] = state.sectionTestData[key] || {});
+        td[field] = inp.value === '' ? null : parseFloat(inp.value);
+      });
+    });
   }
   function renderVolumeTable(){
     const tbody = document.getElementById('volumeTableTbody');
@@ -1850,6 +1967,103 @@
     });
   }
 
+  // A Bit No. like "3RR" or "3-RR2" marks a re-run of bit "3" — returns "3", or null if this
+  // Bit No. isn't a rerun at all.
+  function bitRerunBaseNo(bitNo){
+    const m = String(bitNo||'').match(/^(.*?)[\s\-_]*RR\d*$/i);
+    if (!m) return null;
+    const base = m[1].trim();
+    return base ? base : null;
+  }
+  // the earliest-added record (lowest id) whose own Bit No. equals `base` and isn't itself a
+  // rerun — i.e. that bit's first run — or null if there isn't one yet
+  function findFirstBitRun(base, excludeId){
+    return state.bitsRecords
+      .filter(b=> b.id!==excludeId && String(b.bitNo||'').trim()===base && !bitRerunBaseNo(b.bitNo))
+      .sort((a,b)=>a.id-b.id)[0] || null;
+  }
+  function renderBitsRecordsTable(){
+    const tbody = document.getElementById('bitsRecordsTbody');
+    const bits = state.bitsRecords.slice().sort((a,b)=>(a.depthIn||0)-(b.depthIn||0));
+    if (!bits.length){
+      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;color:var(--text-muted);padding:20px;">No bit records added yet. Use "+ Add Bit Record" above.</td></tr>`;
+      return;
+    }
+    // sync each rerun row's bit-identity fields from its bit's first run before drawing, so
+    // the table (and anything that reads state.bitsRecords, like export) always reflects it
+    bits.forEach(b=>{
+      const base = bitRerunBaseNo(b.bitNo);
+      if (!base) return;
+      const source = findFirstBitRun(base, b.id);
+      if (!source) return;
+      b.size = source.size; b.type = source.type; b.iadc = source.iadc;
+      b.manufacturer = source.manufacturer; b.serialNo = source.serialNo;
+    });
+    tbody.innerHTML = bits.map((b,i)=>{
+      const footage = round1(Math.abs((b.depthOut||0)-(b.depthIn||0)));
+      const base = bitRerunBaseNo(b.bitNo);
+      const source = base ? findFirstBitRun(base, b.id) : null;
+      const inherited = !!source; // identity fields are locked to the first run's values
+      const inheritedAttrs = inherited ? `disabled title="Inherited from bit ${escAttr(base)}'s first run"` : '';
+      const pendingHint = base && !source ? ` title="No first run found yet for bit ${escAttr(base)} — will sync once it exists"` : '';
+      return `
+      <tr>
+        <td>${i+1}</td>
+        <td><input type="text" class="table-cell-input bit-no-input" data-bit-id="${b.id}" value="${escAttr(b.bitNo)}" placeholder="e.g. 1 or 1RR" style="width:60px;"${pendingHint}></td>
+        <td><input type="number" class="table-cell-input bit-size-input" data-bit-id="${b.id}" value="${b.size!=null?b.size:''}" step="0.125" style="width:60px;" ${inheritedAttrs}></td>
+        <td><input type="text" class="table-cell-input bit-type-input" data-bit-id="${b.id}" value="${escAttr(b.type)}" placeholder="e.g. PDC M323" style="width:100px;" ${inheritedAttrs}></td>
+        <td><input type="text" class="table-cell-input bit-iadc-input" data-bit-id="${b.id}" value="${escAttr(b.iadc)}" placeholder="e.g. M323" style="width:70px;" ${inheritedAttrs}></td>
+        <td><input type="text" class="table-cell-input bit-mfr-input" data-bit-id="${b.id}" value="${escAttr(b.manufacturer)}" placeholder="e.g. Smith" style="width:90px;" ${inheritedAttrs}></td>
+        <td><input type="text" class="table-cell-input bit-serial-input" data-bit-id="${b.id}" value="${escAttr(b.serialNo)}" style="width:90px;" ${inheritedAttrs}></td>
+        <td><input type="number" class="table-cell-input bit-in-input" data-bit-id="${b.id}" value="${b.depthIn!=null?b.depthIn:''}" style="width:70px;"></td>
+        <td><input type="number" class="table-cell-input bit-out-input" data-bit-id="${b.id}" value="${b.depthOut!=null?b.depthOut:''}" style="width:70px;"></td>
+        <td style="color:var(--text-muted);">${footage}</td>
+        <td><input type="number" class="table-cell-input bit-hours-input" data-bit-id="${b.id}" value="${b.hours!=null?b.hours:''}" step="0.5" min="0" style="width:60px;"></td>
+        <td><input type="text" class="table-cell-input bit-dull-input" data-bit-id="${b.id}" value="${escAttr(b.dullGrade)}" placeholder="e.g. 1-1-WT-A-X-I-NO-TD" style="width:130px;"></td>
+        <td><input type="text" class="table-cell-input bit-remarks-input" data-bit-id="${b.id}" value="${escAttr(b.remarks)}" style="width:120px;"></td>
+        <td><button class="ghost bit-row-remove" data-bit-id="${b.id}" style="width:auto;padding:2px 8px;">&times;</button></td>
+      </tr>
+    `;
+    }).join('');
+    const field = (cls, key, parse)=>{
+      tbody.querySelectorAll(cls).forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const id = parseInt(inp.dataset.bitId);
+          const b = state.bitsRecords.find(x=>x.id===id);
+          if (!b) return;
+          b[key] = parse ? parse(inp.value) : inp.value;
+          if (key==='depthIn' || key==='depthOut'){
+            const footageCell = inp.closest('tr').children[9];
+            if (footageCell) footageCell.textContent = round1(Math.abs((b.depthOut||0)-(b.depthIn||0)));
+          }
+        });
+      });
+    };
+    field('.bit-no-input','bitNo');
+    // redraw (not on every keystroke, only once editing a Bit No. is done) so a rerun's
+    // inherited fields and lock state stay correct as soon as the base bit number is settled
+    tbody.querySelectorAll('.bit-no-input').forEach(inp=>{
+      inp.addEventListener('change', ()=> renderBitsRecordsTable());
+    });
+    field('.bit-size-input','size', v=>v===''?null:parseFloat(v));
+    field('.bit-type-input','type');
+    field('.bit-iadc-input','iadc');
+    field('.bit-mfr-input','manufacturer');
+    field('.bit-serial-input','serialNo');
+    field('.bit-in-input','depthIn', v=>v===''?null:parseFloat(v));
+    field('.bit-out-input','depthOut', v=>v===''?null:parseFloat(v));
+    field('.bit-hours-input','hours', v=>v===''?null:parseFloat(v));
+    field('.bit-dull-input','dullGrade');
+    field('.bit-remarks-input','remarks');
+    tbody.querySelectorAll('.bit-row-remove').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = parseInt(btn.dataset.bitId);
+        state.bitsRecords = state.bitsRecords.filter(b=>b.id!==id);
+        renderBitsRecordsTable();
+      });
+    });
+  }
+
   function renderTestingZonesTable(){
     const tbody = document.getElementById('testingZonesTbody');
     const zones = state.testingZones.slice().sort((a,b)=>a.top-b.top);
@@ -1861,7 +2075,7 @@
       const relatedPerfs = state.components.filter(c=>c.kind==='perf' && c.testingZoneId===z.id).sort((a,b)=>a.top-b.top);
       const hasRelatedPerfs = relatedPerfs.length > 0;
       const totalPerforated = relatedPerfs.reduce((sum,p)=>sum+(p.bot-p.top), 0);
-      const perfsRow = `<tr><td></td><td colspan="7" style="padding:2px 8px 10px 8px;font-size:11.5px;color:var(--text-muted);border-top:none;">
+      const perfsRow = `<tr><td></td><td colspan="8" style="padding:2px 8px 10px 8px;font-size:11.5px;color:var(--text-muted);border-top:none;">
         ${relatedPerfs.length
           ? `<div style="font-weight:600;margin-bottom:3px;">Perforation intervals:</div>` +
             relatedPerfs.map(p=>`<div>${p.label||'Perforations'}: ${round1(p.top)}\u2013${round1(p.bot)} m (Total Length ${round1(p.bot-p.top)} m)</div>`).join('') +
@@ -1877,6 +2091,7 @@
         <td><input type="number" class="table-cell-input tz-bot-input" data-tz-id="${z.id}" value="${z.bot}" style="width:70px;" ${hasRelatedPerfs?'disabled title="Derived from the deepest related perforation\'s own bottom"':''}></td>
         <td><div class="insp-readout">${round1(z.bot-z.top)}</div></td>
         <td><input type="color" class="tz-color-input" data-tz-id="${z.id}" value="${z.color||'#E85D75'}" style="width:36px;height:26px;padding:1px;cursor:pointer;"></td>
+        <td style="text-align:center;"><input type="checkbox" class="tz-hide-toggle" data-tz-id="${z.id}" ${z.hidden?'checked':''} title="Hide this zone in the drawing"></td>
         <td><button class="ghost tz-row-remove" data-tz-id="${z.id}" style="width:auto;padding:2px 8px;">&times;</button></td>
       </tr>
       ${perfsRow}
@@ -1904,6 +2119,20 @@
     field('.tz-top-input','top', v=>parseFloat(v)||0);
     field('.tz-bot-input','bot', v=>parseFloat(v)||0);
     field('.tz-color-input','color');
+    tbody.querySelectorAll('.tz-hide-toggle').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const id = parseInt(cb.dataset.tzId);
+        const z = state.testingZones.find(x=>x.id===id);
+        if (z){
+          z.hidden = cb.checked;
+          if (z.hidden && selectedTestingZoneId===z.id){
+            selectedTestingZoneId = null;
+            renderInspector();
+          }
+          render();
+        }
+      });
+    });
     tbody.querySelectorAll('.tz-row-remove').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const id = parseInt(btn.dataset.tzId);
@@ -1918,9 +2147,105 @@
   // the depth axis and before the wellbore schematic, as part of the same SVG (not a separate
   // element), so it automatically zooms, pans, and stays depth-aligned along with everything
   // else without any extra synchronization.
+  // Builds one SVG <pattern> element for a formation's chosen lithology texture, tinted with
+  // that formation's own color - a light tint fills the background so the texture itself
+  // reads clearly on top, echoing standard geological log symbol conventions.
+  function buildGeologyPattern(svgNS, id, type, color){
+    const pattern = document.createElementNS(svgNS,'pattern');
+    pattern.setAttribute('id', id);
+    pattern.setAttribute('patternUnits','userSpaceOnUse');
+    const bg = document.createElementNS(svgNS,'rect');
+    bg.setAttribute('x',0); bg.setAttribute('y',0);
+    bg.setAttribute('fill', color); bg.setAttribute('opacity','0.25');
+    if (type==='dots'){
+      pattern.setAttribute('width', 8); pattern.setAttribute('height', 8);
+      bg.setAttribute('width',8); bg.setAttribute('height',8);
+      pattern.appendChild(bg);
+      const dot = document.createElementNS(svgNS,'circle');
+      dot.setAttribute('cx',4); dot.setAttribute('cy',4); dot.setAttribute('r',1.3);
+      dot.setAttribute('fill', color);
+      pattern.appendChild(dot);
+    } else if (type==='dashes'){
+      pattern.setAttribute('width', 12); pattern.setAttribute('height', 6);
+      bg.setAttribute('width',12); bg.setAttribute('height',6);
+      pattern.appendChild(bg);
+      const line = document.createElementNS(svgNS,'line');
+      line.setAttribute('x1',1); line.setAttribute('x2',9); line.setAttribute('y1',3); line.setAttribute('y2',3);
+      line.setAttribute('stroke', color); line.setAttribute('stroke-width','1');
+      pattern.appendChild(line);
+    } else if (type==='brick'){
+      pattern.setAttribute('width', 16); pattern.setAttribute('height', 10);
+      bg.setAttribute('width',16); bg.setAttribute('height',10);
+      pattern.appendChild(bg);
+      const path = document.createElementNS(svgNS,'path');
+      path.setAttribute('d', 'M0,0 H16 M0,5 H8 M8,5 V10 M0,5 V0 M16,5 V10');
+      path.setAttribute('stroke', color); path.setAttribute('stroke-width','1'); path.setAttribute('fill','none');
+      pattern.appendChild(path);
+    } else if (type==='wavy'){
+      pattern.setAttribute('width', 14); pattern.setAttribute('height', 8);
+      bg.setAttribute('width',14); bg.setAttribute('height',8);
+      pattern.appendChild(bg);
+      const path = document.createElementNS(svgNS,'path');
+      path.setAttribute('d', 'M0,4 Q3.5,0 7,4 T14,4');
+      path.setAttribute('stroke', color); path.setAttribute('stroke-width','1'); path.setAttribute('fill','none');
+      pattern.appendChild(path);
+    } else if (type==='cross'){
+      pattern.setAttribute('width', 8); pattern.setAttribute('height', 8);
+      bg.setAttribute('width',8); bg.setAttribute('height',8);
+      pattern.appendChild(bg);
+      const path = document.createElementNS(svgNS,'path');
+      path.setAttribute('d', 'M0,0 L8,8 M8,0 L0,8');
+      path.setAttribute('stroke', color); path.setAttribute('stroke-width','0.75'); path.setAttribute('fill','none');
+      pattern.appendChild(path);
+    } else if (type==='chevron'){
+      pattern.setAttribute('width', 10); pattern.setAttribute('height', 8);
+      bg.setAttribute('width',10); bg.setAttribute('height',8);
+      pattern.appendChild(bg);
+      const path = document.createElementNS(svgNS,'path');
+      path.setAttribute('d', 'M0,2 L5,6 L10,2');
+      path.setAttribute('stroke', color); path.setAttribute('stroke-width','1'); path.setAttribute('fill','none');
+      pattern.appendChild(path);
+    } else if (type==='circles'){
+      pattern.setAttribute('width', 14); pattern.setAttribute('height', 14);
+      bg.setAttribute('width',14); bg.setAttribute('height',14);
+      pattern.appendChild(bg);
+      const circ = document.createElementNS(svgNS,'circle');
+      circ.setAttribute('cx',7); circ.setAttribute('cy',7); circ.setAttribute('r',3.2);
+      circ.setAttribute('fill','none'); circ.setAttribute('stroke', color); circ.setAttribute('stroke-width','1');
+      pattern.appendChild(circ);
+    } else if (type==='vlines'){
+      pattern.setAttribute('width', 6); pattern.setAttribute('height', 8);
+      bg.setAttribute('width',6); bg.setAttribute('height',8);
+      pattern.appendChild(bg);
+      const line = document.createElementNS(svgNS,'line');
+      line.setAttribute('x1',3); line.setAttribute('x2',3); line.setAttribute('y1',0); line.setAttribute('y2',8);
+      line.setAttribute('stroke', color); line.setAttribute('stroke-width','1.5');
+      pattern.appendChild(line);
+    } else if (type==='plus'){
+      pattern.setAttribute('width', 10); pattern.setAttribute('height', 10);
+      bg.setAttribute('width',10); bg.setAttribute('height',10);
+      pattern.appendChild(bg);
+      const path = document.createElementNS(svgNS,'path');
+      path.setAttribute('d', 'M5,2 V8 M2,5 H8');
+      path.setAttribute('stroke', color); path.setAttribute('stroke-width','1'); path.setAttribute('fill','none');
+      pattern.appendChild(path);
+    } else if (type==='grain'){
+      pattern.setAttribute('width', 6); pattern.setAttribute('height', 6);
+      bg.setAttribute('width',6); bg.setAttribute('height',6);
+      pattern.appendChild(bg);
+      const dot = document.createElementNS(svgNS,'circle');
+      dot.setAttribute('cx',3); dot.setAttribute('cy',3); dot.setAttribute('r',0.6);
+      dot.setAttribute('fill', color);
+      pattern.appendChild(dot);
+    }
+    return pattern;
+  }
+
   function renderGeologyColumnSvg(svgNS){
     const g = document.createElementNS(svgNS,'g');
     g.setAttribute('transform', `translate(${RULER_W},0)`);
+    const defs = document.createElementNS(svgNS,'defs');
+    g.appendChild(defs);
     const formations = state.geology.slice().sort((a,b)=>a.top-b.top);
     formations.forEach(f=>{
       const y1 = mdToY(Math.min(f.top,f.bot));
@@ -1929,7 +2254,14 @@
       const rect = document.createElementNS(svgNS,'rect');
       rect.setAttribute('x', 0); rect.setAttribute('y', y1);
       rect.setAttribute('width', GEOLOGY_COL_W); rect.setAttribute('height', h);
-      rect.setAttribute('fill', f.color||'#C9A876');
+      const baseColor = f.color||'#C9A876';
+      if (f.pattern && f.pattern!=='solid'){
+        const patId = `geo-pattern-${f.id}`;
+        defs.appendChild(buildGeologyPattern(svgNS, patId, f.pattern, baseColor));
+        rect.setAttribute('fill', `url(#${patId})`);
+      } else {
+        rect.setAttribute('fill', baseColor);
+      }
       const isSelected = f.id===selectedGeologyId;
       rect.setAttribute('stroke', isSelected ? 'var(--accent)' : 'var(--sch-text-muted)');
       rect.setAttribute('stroke-width', isSelected ? 2.5 : 0.75);
@@ -2004,6 +2336,7 @@
     const g = document.createElementNS(svgNS,'g');
     g.setAttribute('class','testing-zones-group');
     state.testingZones.forEach(z=>{
+      if (z.hidden) return;
       const y1 = mdToY(Math.min(z.top,z.bot));
       const y2 = mdToY(Math.max(z.top,z.bot));
       const h = Math.max(y2-y1, 2);
@@ -2047,6 +2380,7 @@
     const g = document.createElementNS(svgNS,'g');
     g.setAttribute('class','testing-zone-links');
     state.testingZones.forEach(z=>{
+      if (z.hidden) return;
       const y1 = mdToY(Math.min(z.top,z.bot));
       const y2 = mdToY(Math.max(z.top,z.bot));
       const h = Math.max(y2-y1, 2);
@@ -2325,7 +2659,7 @@
     axisTitle.textContent = 'MD, m';
     rulerG.appendChild(axisTitle);
     svg.appendChild(rulerG);
-    if (state.testingZones.length) svg.appendChild(renderTestingZonesSvg(svgNS));
+    if (state.testingZones.length && testingZonesVisible) svg.appendChild(renderTestingZonesSvg(svgNS));
 
     // scale break markers — two draggable horizontal lines showing where the top/bottom
     // compressed zones meet the expanded middle zone
@@ -2408,7 +2742,8 @@
     const flaggedIds = new Set(warnings.flatMap(w=>w.ids));
 
     // components
-    const kindDrawPriority = { casing:0, openhole:0, tubing:1, packer:2, hanger:2, annularpacker:2, perf:3, note:4 };
+    computeActivityLaneOffsets();
+    const kindDrawPriority = { casing:0, openhole:0, tubing:1, packer:2, hanger:2, annularpacker:2, perf:3, note:4, drillingactivity:4, drillingactivityinterval:4 };
     state.components.slice().filter(c=>{
       const sectionKey = c.sectionNumber!=null ? String(c.sectionNumber) : 'none';
       return !hiddenTableSections[sectionKey]; // section-hidden components are omitted from the diagram entirely
@@ -2420,7 +2755,8 @@
     }).forEach(c=>{
       const el = renderComponent(svgNS, c);
       if (flaggedIds.has(c.id)) el.classList.add('flagged');
-      if (c.hidden) el.classList.add('comp-hidden');
+      const zoneHidesThis = c.kind==='perf' && c.testingZoneId!=null && !!state.testingZones.find(z=>z.id===c.testingZoneId)?.hidden;
+      if (c.hidden || zoneHidesThis) el.classList.add('comp-hidden');
       svg.appendChild(el);
     });
     updateWarningBanner(warnings);
@@ -2474,7 +2810,7 @@
     host.appendChild(svg);
     refreshLabelHitBoxes(svg);
     resolveLabelOverlaps(svg);
-    if (state.testingZones.length) svg.appendChild(renderTestingZoneLinks(svgNS, svg));
+    if (state.testingZones.length && testingZonesVisible) svg.appendChild(renderTestingZoneLinks(svgNS, svg));
 
     // (re)attach drag interactions
     attachInteractions(svg);
@@ -2528,6 +2864,7 @@
   // column can collide, then walks top-to-bottom pushing any label down that would overlap
   // the one above it. Runs after every render, so it self-corrects on drag, resize, or reflow.
   function resolveLabelOverlaps(svg){
+    const svgNS = 'http://www.w3.org/2000/svg';
     const bySide = { left: [], right: [] };
     svg.querySelectorAll('.label-group').forEach(lg=>{
       const hit = lg.querySelector('.label-hit');
@@ -2536,22 +2873,78 @@
       bySide[side].push({
         lg, hit,
         y: parseFloat(hit.getAttribute('y')),
-        h: parseFloat(hit.getAttribute('height'))
+        h: parseFloat(hit.getAttribute('height')),
+        isActivity: lg.dataset.isActivity === '1'
       });
     });
     const gap = 3; // minimum breathing room between adjacent labels
     ['left','right'].forEach(side=>{
       const items = bySide[side].sort((a,b)=>a.y-b.y);
       let prevBottom = -Infinity;
+      let prevWasActivity = false;
       items.forEach(item=>{
-        if (item.y < prevBottom + gap){
+        // Consecutive Drilling Activity labels are packed tightly against each other —
+        // each one snaps to right after the previous one's bottom, pulling UP to close any
+        // unused depth-proportional gap as well as pushing down to avoid overlap. Any other
+        // label (or the first activity label after a non-activity one) keeps its natural,
+        // depth-proportional position and is only ever pushed down to avoid overlapping.
+        const shouldCompact = item.isActivity && prevWasActivity;
+        if (shouldCompact || item.y < prevBottom + gap){
           const shift = round1((prevBottom+gap) - item.y);
           shiftLabelGroup(item.lg, shift);
           item.y += shift;
           item.hit.setAttribute('y', item.y);
         }
         prevBottom = item.y + item.h;
+        prevWasActivity = item.isActivity;
       });
+    });
+    // Compaction can pull a label well away from its anchor (or let one settle back close
+    // to it) after it already got — or didn't get — a leader line at initial render time.
+    // Resync every label's leader/anchor-dot now that final positions are settled, creating
+    // or removing them as needed, mirroring Drill String Design's dsResolveLabelOverlaps.
+    svg.querySelectorAll('.label-group').forEach(lg=>{
+      const anchorX = parseFloat(lg.dataset.anchorX);
+      const anchorY = parseFloat(lg.dataset.anchorY);
+      if (isNaN(anchorX) || isNaN(anchorY)) return;
+      const hit = lg.querySelector('.label-hit');
+      if (!hit) return;
+      const hx = parseFloat(hit.getAttribute('x')), hy = parseFloat(hit.getAttribute('y'));
+      const hw = parseFloat(hit.getAttribute('width')), hh = parseFloat(hit.getAttribute('height'));
+      const labelIsLeftOfAnchor = hx < anchorX;
+      const x2 = labelIsLeftOfAnchor ? (hx+hw) : hx;
+      const y2 = hy + hh/2;
+      let leader = lg.querySelector('line');
+      let anchorDot = lg.querySelector('.leader-anchor-dot');
+      const needsLeader = Math.abs(x2-anchorX)>20 || Math.abs(y2-anchorY)>20;
+      if (leader){
+        leader.setAttribute('x2', x2); leader.setAttribute('y2', y2);
+        if (!needsLeader){
+          leader.remove();
+          if (anchorDot) anchorDot.remove();
+        } else if (!anchorDot){
+          anchorDot = document.createElementNS(svgNS,'circle');
+          anchorDot.setAttribute('class','leader-anchor-dot');
+          anchorDot.setAttribute('cx', anchorX); anchorDot.setAttribute('cy', anchorY);
+          anchorDot.setAttribute('r', 2);
+          anchorDot.setAttribute('fill', '#000');
+          lg.appendChild(anchorDot);
+        }
+      } else if (needsLeader){
+        leader = document.createElementNS(svgNS,'line');
+        leader.setAttribute('x1',anchorX); leader.setAttribute('y1',anchorY);
+        leader.setAttribute('x2', x2); leader.setAttribute('y2', y2);
+        leader.setAttribute('stroke','#4A5D6B'); leader.setAttribute('stroke-width',1); leader.setAttribute('stroke-dasharray','2,2');
+        lg.insertBefore(leader, lg.firstChild);
+        if (!anchorDot){
+          anchorDot = document.createElementNS(svgNS,'circle');
+          anchorDot.setAttribute('class','leader-anchor-dot');
+          anchorDot.setAttribute('cx', anchorX); anchorDot.setAttribute('cy', anchorY);
+          anchorDot.setAttribute('r', 2);
+          anchorDot.setAttribute('fill', '#000');
+          lg.appendChild(anchorDot);
+        }
+      }
     });
   }
   function shiftLabelGroup(lg, dy){
@@ -2799,6 +3192,77 @@
       g.appendChild(marker);
       appendLabelGroup(svgNS, g, c, CENTER_X, y, CENTER_X+12, y+3, c.label, `@ ${c.top} m`);
       g.appendChild(hitRect(svgNS, CENTER_X-8, y-8, 16, 16));
+    } else if (c.kind==='drillingactivity'){
+      const y = mdToY(c.top);
+      const ax = CENTER_X + (activityLaneOffsetById.get(c.id)||0);
+      if (c.type === 'fishing'){
+        // Fishing events are drawn as a triangle (a "fish" in the hole), rather than the
+        // plain dot used by other point-in-time activities — distinct at a glance.
+        const r = 5.5;
+        const marker = document.createElementNS(svgNS,'path');
+        marker.setAttribute('d', `M ${ax} ${y-r} L ${ax+r*0.95} ${y+r*0.75} L ${ax-r*0.95} ${y+r*0.75} Z`);
+        marker.setAttribute('fill', c.color);
+        marker.setAttribute('stroke', 'var(--bg)'); marker.setAttribute('stroke-width','1.5');
+        marker.setAttribute('stroke-linejoin','round');
+        g.appendChild(marker);
+      } else if (c.type === 'stuckpipe'){
+        // Stuck Pipe events are drawn as an "X" cross — a widely recognized shorthand for a
+        // blocked/stuck condition — rather than the plain dot used by other point activities.
+        const r = 5;
+        [[-r,-r,r,r],[-r,r,r,-r]].forEach(([x1,y1,x2,y2])=>{
+          const arm = document.createElementNS(svgNS,'line');
+          arm.setAttribute('x1', ax+x1); arm.setAttribute('y1', y+y1);
+          arm.setAttribute('x2', ax+x2); arm.setAttribute('y2', y+y2);
+          arm.setAttribute('stroke', c.color); arm.setAttribute('stroke-width','2.5');
+          arm.setAttribute('stroke-linecap','round');
+          g.appendChild(arm);
+        });
+      } else {
+        const marker = document.createElementNS(svgNS,'circle');
+        marker.setAttribute('cx', ax); marker.setAttribute('cy', y); marker.setAttribute('r', 5);
+        marker.setAttribute('fill', c.color);
+        marker.setAttribute('stroke', 'var(--bg)'); marker.setAttribute('stroke-width','1.5');
+        g.appendChild(marker);
+      }
+      appendLabelGroup(svgNS, g, c, ax, y, ax+12, y+3, c.label, `@ ${c.top} m`);
+      g.appendChild(hitRect(svgNS, ax-8, y-8, 16, 16));
+    } else if (c.kind==='drillingactivityinterval'){
+      const ax = CENTER_X + (activityLaneOffsetById.get(c.id)||0);
+      const tickHw = 6;
+      if (c.type === 'coring'){
+        // Coring intervals are drawn as a solid black rectangle (a core barrel run), rather
+        // than the tick+dashed-line style used by other interval activities — this makes
+        // them read at a glance as a cored section of the hole, distinct from Logging etc.
+        const bar = document.createElementNS(svgNS,'rect');
+        bar.setAttribute('x', ax-tickHw); bar.setAttribute('y', Math.min(y1,y2));
+        bar.setAttribute('width', tickHw*2); bar.setAttribute('height', Math.max(Math.abs(y2-y1),1));
+        bar.setAttribute('fill', '#000000');
+        g.appendChild(bar);
+      } else {
+        [y1, y2].forEach(yy=>{
+          const tick = document.createElementNS(svgNS,'line');
+          tick.setAttribute('x1', ax-tickHw); tick.setAttribute('x2', ax+tickHw);
+          tick.setAttribute('y1', yy); tick.setAttribute('y2', yy);
+          tick.setAttribute('stroke', c.color); tick.setAttribute('stroke-width','2');
+          g.appendChild(tick);
+        });
+        const vline = document.createElementNS(svgNS,'line');
+        vline.setAttribute('x1', ax); vline.setAttribute('x2', ax);
+        vline.setAttribute('y1', y1); vline.setAttribute('y2', y2);
+        vline.setAttribute('stroke', c.color); vline.setAttribute('stroke-width','2');
+        vline.setAttribute('stroke-dasharray','3,2');
+        g.appendChild(vline);
+      }
+      const anchY = labelAnchorY(c, y1, y2, 'middle');
+      const intervalSub = [`${round1(c.top)}–${round1(c.bot)} m`];
+      if (c.type==='coring'){
+        intervalSub.push(`Footage: ${round1(Math.abs(c.bot-c.top))} m`);
+        if (c.recoveryPct!=null) intervalSub.push(`Recovery: ${round1(c.recoveryPct)}%`);
+      }
+      // the connector's component-side end is the true geometric center (ax, anchY by
+      // default) — not offset to the tick's edge — so it visibly meets the component itself
+      appendLabelGroup(svgNS, g, c, ax, anchY, ax+tickHw+10, anchY+3, c.label, intervalSub);
+      g.appendChild(hitRect(svgNS, ax-tickHw-5, Math.min(y1,y2)-3, tickHw*2+10, Math.abs(y2-y1)+6));
     } else if (c.kind==='openhole'){
       // solid straight side line
       [-1,1].forEach(side=>{
@@ -2849,7 +3313,7 @@
       const baseHw = hostCasing ? halfW(hostCasing.od) : 8;
       const spikeLen = hostCasing ? 17 : 11;
       const relatedZone = c.testingZoneId!=null ? state.testingZones.find(z=>z.id===c.testingZoneId) : null;
-      const spikeColor = relatedZone?.color || c.color;
+      const spikeColor = (relatedZone && !relatedZone.hidden) ? relatedZone.color : c.color;
       const n = Math.max(3, Math.round((y2-y1)/13));
       for(let i=0;i<n;i++){
         const yy = y1 + (y2-y1)*(i/(n-1||1));
@@ -2919,20 +3383,29 @@
     else if (lx <= CENTER_X && lx > leftLabelX()) lx = leftLabelX();
     // if the label ends up on the opposite side of the wellbore centerline from its default
     // anchor, connect to the mirrored point on that same side instead — otherwise the leader
-    // has to cross straight through the component to reach a now-far-side anchor
+    // has to cross straight through the component to reach a now-far-side anchor. Skipped for
+    // Drilling Activity components: their anchor is the real lane-stacked marker position, not
+    // the always-dead-center point every other component kind anchors at, so mirroring it would
+    // disconnect the leader from where the marker actually is.
     let effAnchorX = anchorX;
-    if ((lx < CENTER_X && anchorX > CENTER_X) || (lx > CENTER_X && anchorX < CENTER_X)){
+    const isLaneStackedActivity = (comp.kind==='drillingactivity' || comp.kind==='drillingactivityinterval');
+    if (!isLaneStackedActivity && ((lx < CENTER_X && anchorX > CENTER_X) || (lx > CENTER_X && anchorX < CENTER_X))){
       effAnchorX = CENTER_X - (anchorX - CENTER_X);
     }
     const lg = document.createElementNS(svgNS,'g');
     lg.setAttribute('class','label-group');
     lg.dataset.anchorX = effAnchorX;
+    lg.dataset.anchorY = anchorY;
     lg.dataset.baseX = baseX;
+    // Drilling Activity labels get packed tightly against each other during overlap
+    // resolution (closing unused vertical gaps), unlike other component labels which only
+    // get pushed apart when they'd otherwise overlap — see resolveLabelOverlaps().
+    if (isLaneStackedActivity) lg.dataset.isActivity = '1';
     // which side a label belongs to is purely about where it currently sits, not which
     // component type it came from — a label dragged across the well is simply "on that side" now
     const side = (lx >= CENTER_X) ? 'right' : 'left';
     lg.dataset.side = side;
-    const hasZoneRibbon = comp.kind==='perf' && comp.testingZoneId != null;
+    const hasZoneRibbon = comp.kind==='perf' && comp.testingZoneId != null && !(state.testingZones.find(z=>z.id===comp.testingZoneId)?.hidden);
     if (!hasZoneRibbon && (Math.abs(lx-effAnchorX)>20 || Math.abs(ly-anchorY)>20)){
       const leader = document.createElementNS(svgNS,'line');
       leader.setAttribute('x1',effAnchorX); leader.setAttribute('y1',anchorY);
@@ -2941,6 +3414,12 @@
       leader.setAttribute('x2', x2); leader.setAttribute('y2', ly-4);
       leader.setAttribute('stroke','#4A5D6B'); leader.setAttribute('stroke-width',1); leader.setAttribute('stroke-dasharray','2,2');
       lg.appendChild(leader);
+      const anchorDot = document.createElementNS(svgNS,'circle');
+      anchorDot.setAttribute('class','leader-anchor-dot');
+      anchorDot.setAttribute('cx', effAnchorX); anchorDot.setAttribute('cy', anchorY);
+      anchorDot.setAttribute('r', 2);
+      anchorDot.setAttribute('fill', '#000');
+      lg.appendChild(anchorDot);
     }
     // left-side labels align by their left edge; right-side labels align by their right edge
     const textAnchor = side==='left' ? 'end' : 'start';
@@ -3236,6 +3715,21 @@
             <div class="insp-field"><label>Bottom (m)</label><input type="number" id="f_geo_bot" value="${f.bot}"></div>
           </div>
           <div class="insp-field"><label>Color</label><input type="color" id="f_geo_color" value="${f.color||'#C9A876'}"></div>
+          <div class="insp-field"><label>Pattern</label>
+            <select id="f_geo_pattern">
+              <option value="solid" ${(!f.pattern||f.pattern==='solid')?'selected':''}>Solid</option>
+              <option value="dots" ${f.pattern==='dots'?'selected':''}>Dots (Sandstone)</option>
+              <option value="dashes" ${f.pattern==='dashes'?'selected':''}>Dashes (Shale)</option>
+              <option value="brick" ${f.pattern==='brick'?'selected':''}>Brick (Limestone)</option>
+              <option value="wavy" ${f.pattern==='wavy'?'selected':''}>Wavy (Dolomite)</option>
+              <option value="cross" ${f.pattern==='cross'?'selected':''}>Cross-hatch (Igneous)</option>
+              <option value="chevron" ${f.pattern==='chevron'?'selected':''}>Chevron (Anhydrite)</option>
+              <option value="circles" ${f.pattern==='circles'?'selected':''}>Circles (Conglomerate)</option>
+              <option value="vlines" ${f.pattern==='vlines'?'selected':''}>Vertical Streaks (Coal)</option>
+              <option value="plus" ${f.pattern==='plus'?'selected':''}>Plus Marks (Salt/Halite)</option>
+              <option value="grain" ${f.pattern==='grain'?'selected':''}>Fine Stipple (Siltstone)</option>
+            </select>
+          </div>
           <button class="ghost" id="f_geo_delete" style="width:100%;margin-top:8px;color:#E5484D;">Delete Formation</button>
         `;
         const bind = (id,evt,fn)=>{ const e=document.getElementById(id); if(e) e.addEventListener(evt,fn); };
@@ -3244,6 +3738,7 @@
         bind('f_geo_top','input', e=>{ f.top = parseFloat(e.target.value)||0; render({skipInspector:true}); });
         bind('f_geo_bot','input', e=>{ f.bot = parseFloat(e.target.value)||0; render({skipInspector:true}); });
         bind('f_geo_color','input', e=>{ f.color = e.target.value; render({skipInspector:true}); });
+        bind('f_geo_pattern','change', e=>{ f.pattern = e.target.value; render({skipInspector:true}); });
         bind('f_geo_delete','click', ()=>{
           state.geology = state.geology.filter(x=>x.id!==f.id);
           selectedGeologyId = null;
@@ -3266,6 +3761,7 @@
             <div class="insp-field"><label>Bottom (m)</label><input type="number" id="f_tz_bot" value="${z.bot}"></div>
           </div>
           <div class="insp-field"><label>Color</label><input type="color" id="f_tz_color" value="${z.color||'#E85D75'}"></div>
+          <label class="insp-checkbox"><input type="checkbox" id="f_tz_hidden" ${z.hidden?'checked':''}> Hide Testing Zone</label>
           <button class="ghost" id="f_tz_delete" style="width:100%;margin-top:8px;color:#E5484D;">Delete Testing Zone</button>
         `;
         const bind = (id,evt,fn)=>{ const e=document.getElementById(id); if(e) e.addEventListener(evt,fn); };
@@ -3274,6 +3770,7 @@
         bind('f_tz_top','input', e=>{ z.top = parseFloat(e.target.value)||0; render({skipInspector:true}); });
         bind('f_tz_bot','input', e=>{ z.bot = parseFloat(e.target.value)||0; render({skipInspector:true}); });
         bind('f_tz_color','input', e=>{ z.color = e.target.value; render({skipInspector:true}); });
+        bind('f_tz_hidden','change', e=>{ z.hidden = e.target.checked; render(); });
         bind('f_tz_delete','click', ()=>{
           state.testingZones = state.testingZones.filter(x=>x.id!==z.id);
           selectedTestingZoneId = null;
@@ -3339,7 +3836,7 @@
       return;
     }
     el.className='';
-    const isPoint = comp.kind==='packer' || comp.kind==='hanger' || comp.kind==='annularpacker' || comp.kind==='note';
+    const isPoint = comp.kind==='packer' || comp.kind==='hanger' || comp.kind==='annularpacker' || comp.kind==='note' || comp.kind==='drillingactivity';
     let hangerLinerRange = null;
     if (comp.kind==='hanger' && comp.linerRefId!=null){
       const liner = state.components.find(o=>o.id===comp.linerRefId);
@@ -3372,6 +3869,16 @@
         </select>
       </div>
       ` : ''}
+      ${(comp.kind==='drillingactivity' || comp.kind==='drillingactivityinterval') ? `
+      <div class="insp-row">
+        <div class="insp-field"><label>Date</label><input type="date" id="f_activityDate" value="${escAttr(comp.activityDate||'')}"></div>
+        <div class="insp-field"><label>Duration (hr)</label><input type="number" id="f_activityDuration" value="${comp.activityDuration!=null?comp.activityDuration:''}" step="0.5" min="0"></div>
+      </div>
+      ${comp.type==='coring' ? `
+      <div class="insp-field"><label>Recovery (%)</label><input type="number" id="f_recoveryPct" value="${comp.recoveryPct!=null?comp.recoveryPct:''}" step="1" min="0" max="100" placeholder="e.g. 85"></div>
+      ` : ''}
+      <div class="insp-field"><label>Remarks</label><textarea id="f_remarks" rows="3" style="width:100%;resize:vertical;">${escAttr(comp.remarks||'')}</textarea></div>
+      ` : ''}
       ${comp.kind==='annularpacker' ? (()=>{
         const candidates = state.components.filter(o=> o.id!==comp.id && o.kind==='casing');
         const opts = candidates.map(o=>{
@@ -3396,8 +3903,8 @@
         </select>
       </div>`;
       })() : ''}
-      ${(comp.kind==='casing' || comp.type==='openhole') ? (()=>{
-        const defaultAnchor = comp.type==='openhole' ? 'middle' : 'bottom';
+      ${(comp.kind==='casing' || comp.type==='openhole' || comp.kind==='drillingactivityinterval') ? (()=>{
+        const defaultAnchor = (comp.type==='openhole' || comp.kind==='drillingactivityinterval') ? 'middle' : 'bottom';
         const current = comp.labelAnchor || defaultAnchor;
         return `<div class="insp-field"><label>Label Connects To</label>
         <select id="f_labelAnchor">
@@ -3476,6 +3983,10 @@
     bind('f_gun','input', e=>{ comp.gun=e.target.value; render({skipInspector:true}); });
     bind('f_spf','change', e=>{ comp.spf=e.target.value; render(); });
     bind('f_testingZoneRef','change', e=>{ comp.testingZoneId = e.target.value ? parseInt(e.target.value) : null; render(); });
+    bind('f_activityDate','change', e=>{ comp.activityDate = e.target.value; render({skipInspector:true}); });
+    bind('f_activityDuration','input', e=>{ comp.activityDuration = e.target.value===''?null:parseFloat(e.target.value); render({skipInspector:true}); });
+    bind('f_recoveryPct','input', e=>{ comp.recoveryPct = e.target.value===''?null:Math.max(0,Math.min(100,parseFloat(e.target.value))); render({skipInspector:true}); });
+    bind('f_remarks','input', e=>{ comp.remarks = e.target.value; render({skipInspector:true}); });
     bind('f_color','input', e=>{ comp.color=e.target.value; render({skipInspector:true}); });
     bind('f_weight','input', e=>{ comp.weight=e.target.value; render({skipInspector:true}); });
     bind('f_grade','input', e=>{ comp.grade=e.target.value; render({skipInspector:true}); });
@@ -3544,6 +4055,15 @@
   document.getElementById('splitScaleToggle').addEventListener('click', ()=>{
     splitScale = !splitScale;
     document.getElementById('splitScaleToggle').textContent = 'Split Scale: ' + (splitScale ? 'On' : 'Off');
+    render();
+  });
+  document.getElementById('testingZonesToggle').addEventListener('click', ()=>{
+    testingZonesVisible = !testingZonesVisible;
+    document.getElementById('testingZonesToggle').textContent = 'Testing Zones: ' + (testingZonesVisible ? 'On' : 'Off');
+    if (!testingZonesVisible && selectedTestingZoneId != null){
+      selectedTestingZoneId = null;
+      renderInspector();
+    }
     render();
   });
   document.getElementById('volumeCalcToggle').addEventListener('click', ()=>{
@@ -3635,8 +4155,8 @@
   });
   document.getElementById('wellName').addEventListener('input', ()=>{});
   document.getElementById('clearAll').addEventListener('click', ()=>{
-    csConfirm('Start a new project? This will permanently delete ALL saved designs in the Designs Manager, and clear the current components, Geology, and Testing Zones. This cannot be undone.', ()=>{
-      state.components = []; state.geology = []; state.testingZones = [];
+    csConfirm('Start a new project? This will permanently delete ALL saved designs in the Designs Manager, and clear the current components, Geology, Testing Zones, and Bits Records. This cannot be undone.', ()=>{
+      state.components = []; state.geology = []; state.testingZones = []; state.sectionTestData = {}; state.bitsRecords = [];
       state.totalDepth = 3200;
       document.getElementById('wellName').value = 'Well-1';
       document.getElementById('totalDepth').value = 3200;
@@ -3876,6 +4396,8 @@
     volumeGroups = Array.isArray(data.volumeGroups) ? data.volumeGroups : [];
     state.geology = Array.isArray(data.geology) ? data.geology : [];
     state.testingZones = Array.isArray(data.testingZones) ? data.testingZones : [];
+    state.bitsRecords = Array.isArray(data.bitsRecords) ? data.bitsRecords : [];
+    state.sectionTestData = (data.sectionTestData && typeof data.sectionTestData==='object') ? data.sectionTestData : {};
     currentlyLoadedManagerDesignId = d.id;
     render();
   });
@@ -3902,6 +4424,8 @@
       volumeGroups: volumeGroups,
       geology: state.geology,
       testingZones: state.testingZones,
+      bitsRecords: state.bitsRecords,
+      sectionTestData: state.sectionTestData,
     };
   }
   document.getElementById('saveCurrentToManager').addEventListener('click', ()=>{
@@ -3915,7 +4439,7 @@
   // leaves Well Name/Total Depth/Version/Notes as they were)
   document.getElementById('dmgrNew').addEventListener('click', ()=>{
     csConfirm('Start a new blank design? Any unsaved changes to the current design will be lost.', ()=>{
-      state.components = []; selectedId = null; selectedVolId = null; volumeGroups = []; state.geology = []; state.testingZones = []; selectedGeologyId = null; selectedTestingZoneId = null;
+      state.components = []; selectedId = null; selectedVolId = null; volumeGroups = []; state.geology = []; state.testingZones = []; state.sectionTestData = {}; state.bitsRecords = []; selectedGeologyId = null; selectedTestingZoneId = null;
       state.totalDepth = 3200;
       document.getElementById('wellName').value = 'Well-1';
       document.getElementById('totalDepth').value = 3200;
@@ -3959,6 +4483,8 @@
     volumeGroups = Array.isArray(data.volumeGroups) ? data.volumeGroups : [];
     state.geology = Array.isArray(data.geology) ? data.geology : [];
     state.testingZones = Array.isArray(data.testingZones) ? data.testingZones : [];
+    state.bitsRecords = Array.isArray(data.bitsRecords) ? data.bitsRecords : [];
+    state.sectionTestData = (data.sectionTestData && typeof data.sectionTestData==='object') ? data.sectionTestData : {};
     currentlyLoadedManagerDesignId = d.id;
     renderDesignSwitcher();
     render();
@@ -4081,6 +4607,21 @@
     state.geology.push({ id: nextGeologyId++, name:'', lithology:'', top: lastBot, bot: lastBot+200, color });
     renderGeologyTable();
     render();
+  });
+  document.getElementById('openBitsRecords').addEventListener('click', ()=>{
+    renderBitsRecordsTable();
+    document.getElementById('bitsRecordsOverlay').style.display = 'flex';
+  });
+  document.getElementById('closeBitsRecords').addEventListener('click', ()=>{
+    document.getElementById('bitsRecordsOverlay').style.display = 'none';
+  });
+  document.getElementById('bitsRecordsOverlay').addEventListener('click', e=>{
+    if (e.target.id==='bitsRecordsOverlay') e.target.style.display = 'none';
+  });
+  document.getElementById('addBitsRecordRow').addEventListener('click', ()=>{
+    const lastOut = state.bitsRecords.length ? Math.max(...state.bitsRecords.map(b=>b.depthOut||0)) : 0;
+    state.bitsRecords.push({ id: nextBitId++, bitNo: String(state.bitsRecords.length+1), size: null, type:'', iadc:'', manufacturer:'', serialNo:'', depthIn: lastOut, depthOut: lastOut, hours: null, dullGrade:'', remarks:'' });
+    renderBitsRecordsTable();
   });
   document.getElementById('openTestingZones').addEventListener('click', ()=>{
     renderTestingZonesTable();
@@ -4229,12 +4770,17 @@
   });
 
   function saveDesign(){
+    // flush whatever is currently loaded on the canvas back into its own Designs Manager
+    // entry first, so "Save Project" always exports the latest edits rather than whatever
+    // was last explicitly saved to that entry
+    autosaveCurrentlyLoadedDesign();
+    renderDesignsManagerList();
     const designs = loadManagerDesigns();
     if (!designs.length){
       alert('There are no saved designs in the Designs Manager yet. Use "Save Current Design to List" there first.');
       return;
     }
-    const project = { format: 'thinker-project', version: 1, exportedAt: Date.now(), designs, geology: state.geology, testingZones: state.testingZones };
+    const project = { format: 'thinker-project', version: 1, exportedAt: Date.now(), designs, geology: state.geology, testingZones: state.testingZones, bitsRecords: state.bitsRecords, sectionTestData: state.sectionTestData };
     const blob = new Blob([JSON.stringify(project, null, 2)], {type:'application/json'});
     const now = new Date();
     const dateStr = String(now.getDate()).padStart(2,'0') + String(now.getMonth()+1).padStart(2,'0') + String(now.getFullYear()).slice(-2);
@@ -4272,6 +4818,8 @@
       if (saveManagerDesigns(list)){
         if (Array.isArray(data.geology)) state.geology = data.geology;
         if (Array.isArray(data.testingZones)) state.testingZones = data.testingZones;
+        if (Array.isArray(data.bitsRecords)) state.bitsRecords = data.bitsRecords;
+        if (data.sectionTestData && typeof data.sectionTestData==='object') state.sectionTestData = data.sectionTestData;
         renderDesignSwitcher();
         renderDesignsManagerList();
         render();
@@ -4291,6 +4839,8 @@
       document.getElementById('csNotes').value = data.notes || '';
       state.geology = Array.isArray(data.geology) ? data.geology : [];
       state.testingZones = Array.isArray(data.testingZones) ? data.testingZones : [];
+      state.bitsRecords = Array.isArray(data.bitsRecords) ? data.bitsRecords : [];
+      state.sectionTestData = (data.sectionTestData && typeof data.sectionTestData==='object') ? data.sectionTestData : {};
       document.getElementById('csVersion').value = data.designVersion || '1.0';
       state.components = normalizePointComponents(data.components.map(c => ({
         labelDx: 0, labelDy: 0, ...c
@@ -5792,6 +6342,12 @@
       leader.setAttribute('x2', x2); leader.setAttribute('y2', ly-4);
       leader.setAttribute('stroke','#4A5D6B'); leader.setAttribute('stroke-width',1); leader.setAttribute('stroke-dasharray','2,2');
       lg.appendChild(leader);
+      const anchorDot = document.createElementNS(svgNS,'circle');
+      anchorDot.setAttribute('class','leader-anchor-dot');
+      anchorDot.setAttribute('cx', effAnchorX); anchorDot.setAttribute('cy', anchorY);
+      anchorDot.setAttribute('r', 2);
+      anchorDot.setAttribute('fill', '#000');
+      lg.appendChild(anchorDot);
     }
     // left-side labels align by their right edge; right-side labels align by their left edge —
     // both grow outward, away from the well
@@ -6225,16 +6781,35 @@
       const x2 = labelIsLeftOfAnchor ? (hx+hw) : hx;
       const y2 = hy + hh/2;
       let leader = lg.querySelector('line');
+      let anchorDot = lg.querySelector('.leader-anchor-dot');
       const needsLeader = Math.abs(x2-anchorX)>20 || Math.abs(y2-anchorY)>20;
       if (leader){
         leader.setAttribute('x2', x2); leader.setAttribute('y2', y2);
-        if (!needsLeader) leader.remove();
+        if (!needsLeader){
+          leader.remove();
+          if (anchorDot) anchorDot.remove();
+        } else if (!anchorDot){
+          anchorDot = document.createElementNS(svgNS,'circle');
+          anchorDot.setAttribute('class','leader-anchor-dot');
+          anchorDot.setAttribute('cx', anchorX); anchorDot.setAttribute('cy', anchorY);
+          anchorDot.setAttribute('r', 2);
+          anchorDot.setAttribute('fill', '#000');
+          lg.appendChild(anchorDot);
+        }
       } else if (needsLeader){
         leader = document.createElementNS(svgNS,'line');
         leader.setAttribute('x1',anchorX); leader.setAttribute('y1',anchorY);
         leader.setAttribute('x2', x2); leader.setAttribute('y2', y2);
         leader.setAttribute('stroke','#4A5D6B'); leader.setAttribute('stroke-width',1); leader.setAttribute('stroke-dasharray','2,2');
         lg.insertBefore(leader, lg.firstChild);
+        if (!anchorDot){
+          anchorDot = document.createElementNS(svgNS,'circle');
+          anchorDot.setAttribute('class','leader-anchor-dot');
+          anchorDot.setAttribute('cx', anchorX); anchorDot.setAttribute('cy', anchorY);
+          anchorDot.setAttribute('r', 2);
+          anchorDot.setAttribute('fill', '#000');
+          lg.appendChild(anchorDot);
+        }
       }
     });
   }
@@ -14454,6 +15029,8 @@
           <td>Bot: ${c.pressureRating||''}<br>Top: ${c.topPressureRating||''}</td>
           <td>Bot: ${ring}<br>Top: ${topRing}</td>
           <td>${ramConfigCell}</td>
+          <td>${c.manufacturer||''}</td>
+          <td>${c.serialNumber||''}</td>
           <td>${posButtons}</td>
         </tr>`;
       }
@@ -14465,6 +15042,8 @@
         <td>${c.pressureRating||''}</td>
         <td>${ring}</td>
         <td>${ramConfigCell}</td>
+        <td>${c.manufacturer||''}</td>
+        <td>${c.serialNumber||''}</td>
         <td>${posButtons}</td>
       </tr>`;
     }).join('');
@@ -14927,6 +15506,30 @@
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
     bopDownloadBlob(blob, 'bop-configuration.json');
   }
+  function applyBopData(data){
+    bopStack = data.stack;
+    nextBopId = data.nextId || (bopStack.reduce((max,c)=>Math.max(max,(c.id||0)+1), 1));
+    selectedBopId = null;
+    document.getElementById('bopWellName').value = data.wellName || 'Well-1';
+    document.getElementById('bopRigName').value = data.rigName || '';
+    document.getElementById('bopVersion').value = data.designVersion || '1.0';
+    document.getElementById('bopNotes').value = data.notes || '';
+    bopInventory = Array.isArray(data.inventory) ? data.inventory : [];
+    nextBopInventoryId = data.nextInventoryId || (bopInventory.reduce((max,x)=>Math.max(max,(x.id||0)+1), 1));
+    renderBopSheet();
+  }
+  // A BOP configuration file loaded via "Load Design" is also kept, in this browser, as the
+  // default that opens automatically next time this app is opened — so the most recently
+  // uploaded BOP configuration always becomes the new starting point.
+  function loadBopCustomExample(){
+    try {
+      const raw = localStorage.getItem('wellSketchBopCustomExample');
+      return raw ? JSON.parse(raw) : null;
+    } catch(e){ return null; }
+  }
+  function saveBopCustomExample(data){
+    try { localStorage.setItem('wellSketchBopCustomExample', JSON.stringify(data)); } catch(e){}
+  }
   function bopLoadDesignFromFile(file){
     const reader = new FileReader();
     reader.onload = (e)=>{
@@ -14941,16 +15544,8 @@
         alert('That file doesn\'t look like a saved BOP configuration.');
         return;
       }
-      bopStack = data.stack;
-      nextBopId = data.nextId || (bopStack.reduce((max,c)=>Math.max(max,(c.id||0)+1), 1));
-      selectedBopId = null;
-      document.getElementById('bopWellName').value = data.wellName || 'Well-1';
-      document.getElementById('bopRigName').value = data.rigName || '';
-      document.getElementById('bopVersion').value = data.designVersion || '1.0';
-      document.getElementById('bopNotes').value = data.notes || '';
-      bopInventory = Array.isArray(data.inventory) ? data.inventory : [];
-      nextBopInventoryId = data.nextInventoryId || (bopInventory.reduce((max,x)=>Math.max(max,(x.id||0)+1), 1));
-      renderBopSheet();
+      applyBopData(data);
+      saveBopCustomExample(data);
     };
     reader.onerror = ()=> alert('Could not read that file.');
     reader.readAsText(file);
@@ -14964,6 +15559,10 @@
     if (file) bopLoadDesignFromFile(file);
     e.target.value = '';
   });
+  {
+    const bopExample = loadBopCustomExample();
+    if (bopExample) applyBopData(bopExample);
+  }
 
   // Scroll-to-zoom on the stack drawing area. Applied via a CSS variable on the
   // (persistent) container rather than the SVG directly, since the SVG itself is fully
@@ -15019,6 +15618,7 @@
   renderBopSheet();
   window.__renderBopSheet = renderBopSheet;
 })();
+
 
 /* ================= Sheet tab switching ================= */
 (function(){
