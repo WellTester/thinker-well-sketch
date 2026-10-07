@@ -331,6 +331,11 @@
   .modal-table td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text);}
   .modal-table tbody tr:hover{background:var(--panel-2);}
   .modal-table button{padding:3px 10px;font-size:11px;}
+  .modal-table thead th[data-sort-key]{cursor:pointer;user-select:none;white-space:nowrap;}
+  .modal-table thead th[data-sort-key]:hover{color:var(--text);}
+  .modal-table thead th[data-sort-key] .sort-arrow{display:inline-block;width:10px;opacity:0.6;}
+  .modal-table thead th[data-sort-key].sort-active{color:var(--accent);}
+  .modal-table thead th[data-sort-key].sort-active .sort-arrow{opacity:1;}
   .modal-footnote{font-size:10.5px;color:var(--text-muted);line-height:1.5;}
 
   .warning-banner{
@@ -510,7 +515,7 @@
     </div>
     <div class="modal-table-wrap" style="max-height:70vh;">
       <table class="modal-table" id="tableViewTable">
-        <thead><tr><th>#</th><th>Section #</th><th>Label</th><th>Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Length (m)</th><th>OD (in)</th><th>ID (in)</th><th>Weight</th><th>Grade</th><th>Cemented</th><th>Visible</th><th>Reorder</th></tr></thead>
+        <thead><tr><th>#</th><th>Section #</th><th>Label</th><th>Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Length (m)</th><th>OD (in)</th><th>ID (in)</th><th>Weight</th><th>Grade</th><th>Cemented</th><th>Visible Component</th><th>Visible Label</th><th>Reorder</th></tr></thead>
         <tbody id="tableViewTbody"></tbody>
       </table>
     </div>
@@ -601,7 +606,7 @@
     <button id="addBitsRecordRow" class="ghost" style="width:100%;margin:8px 0;">+ Add Bit Record</button>
     <div class="modal-table-wrap" style="max-height:60vh;">
       <table class="modal-table" id="bitsRecordsTable">
-        <thead><tr><th>#</th><th>Bit No.</th><th>Size (in)</th><th>Type</th><th>IADC</th><th>Manufacturer</th><th>Serial No.</th><th>Depth In (m)</th><th>Depth Out (m)</th><th>Footage (m)</th><th>Hours</th><th>Dull Grade</th><th>Remarks</th><th></th></tr></thead>
+        <thead><tr id="bitsRecordsHeaderRow"><th>#</th><th data-sort-key="bitNo">Bit No.</th><th data-sort-key="runDate">Run Date</th><th data-sort-key="size">Size (in)</th><th data-sort-key="type">Type</th><th data-sort-key="iadc">IADC</th><th data-sort-key="manufacturer">Manufacturer</th><th data-sort-key="serialNo">Serial No.</th><th data-sort-key="depthIn">Depth In (m)</th><th data-sort-key="depthOut">Depth Out (m)</th><th data-sort-key="footage">Footage (m)</th><th data-sort-key="hours">Hours</th><th data-sort-key="dullGrade">Dull Grade</th><th data-sort-key="remarks">Remarks</th><th></th></tr></thead>
         <tbody id="bitsRecordsTbody"></tbody>
       </table>
     </div>
@@ -756,6 +761,7 @@
     <div style="display:flex;flex-direction:column;gap:6px;">
       <button id="dsBomBtn" class="ghost toolbar-btn">BoM</button>
       <button id="dsVolumesBtn" class="ghost toolbar-btn">Volumes</button>
+      <button id="dsPillsBtn" class="ghost toolbar-btn">Pills</button>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;">
       <button id="dsPipeCatalogBtn" class="ghost toolbar-btn">Drill Pipe Catalog</button>
@@ -807,7 +813,7 @@
     <div class="modal-hint">Components stack contiguously top to bottom — each one's Top is locked to the previous one's Bottom. Drag a row to reorder, resize with Length. Only the first component's Top is free (it anchors the whole string). Total Depth follows the stack automatically. TJ Connection and Collar Size selections set OD/ID automatically per API Spec 7.</div>
     <div class="modal-table-wrap" style="max-height:70vh;overflow-x:auto;">
       <table class="modal-table" id="dsTableViewTable">
-        <thead><tr><th>#</th><th>Label</th><th>Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Length (m)</th><th>OD (in)</th><th>Blade OD (in)</th><th>ID (in)</th><th>Weight <select id="dsWeightColUnitSelect" style="font-weight:400;font-size:10.5px;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:3px;padding:1px 3px;margin-left:2px;"><option value="ppf">ppf</option><option value="kgm">kg/m</option></select></th><th>Grade</th><th>TJ OD (in)</th><th>TJ ID (in)</th><th>Top Threads</th><th>Top Connection</th><th>Bottom Threads</th><th>Bottom Connection</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Label</th><th>Type</th><th>Top (m)</th><th>Bottom (m)</th><th>Length (m)</th><th>OD (in)</th><th>Blade OD (in)</th><th>ID (in)</th><th id="dsWeightColHead">WT (PPF)</th><th>Grade</th><th>TJ OD (in)</th><th>TJ ID (in)</th><th>Top Threads</th><th>Top Connection</th><th>Bottom Threads</th><th>Bottom Connection</th><th></th></tr></thead>
         <tbody id="dsTableViewTbody"></tbody>
       </table>
     </div>
@@ -897,13 +903,25 @@
         <button id="dsCloseVolumes" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
       </div>
     </div>
-    <div class="modal-hint">Internal Volume uses each component's own ID. Annular Volume uses the overlap between the drill string's OD and the wellbore's ID (Casing or Open Hole) at that depth — intervals with no wellbore feature defined show as \u2014.</div>
-    <div class="modal-table-wrap" style="max-height:65vh;">
-      <table class="modal-table" id="dsVolumesTable">
-        <thead><tr><th>Top (m)</th><th>Bottom (m)</th><th>Length (m)</th><th>Component</th><th>ID (in)</th><th id="dsVolInternalHeader">Internal Vol (bbl)</th><th>Wellbore</th><th>DS OD (in)</th><th>Wellbore ID (in)</th><th id="dsVolAnnularHeader">Annular Vol (bbl)</th></tr></thead>
-        <tbody id="dsVolumesTbody"></tbody>
-      </table>
+    <div class="modal-hint">Three separate tables: Drill String, Open Hole and Casing. Open Hole and Casing are broken down by the drill string component inside each interval: Hole / Casing Volume is the full volume of that interval, Annular Volume is that volume minus the pipe (the whole volume where there is no drill string). Capacity is in litres per metre.</div>
+    <div style="max-height:65vh;overflow:auto;"><div id="dsVolumesBody"></div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dsPillsOverlay" style="display:none;">
+  <div class="modal-box" style="width:1200px; max-width:96vw; max-height:88vh;">
+    <div class="modal-header">
+      <h3>Pills</h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label style="font-size:11px;text-transform:uppercase;color:var(--text-muted);">Units:</label>
+        <select id="dsPillsUnitSelect" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;">
+          <option value="bbl">bbl</option>
+          <option value="m3">m³</option>
+        </select>
+        <button id="dsClosePills" class="ghost" style="width:auto;padding:5px 10px;">&times;</button>
+      </div>
     </div>
+    <div style="max-height:70vh;overflow:auto;"><div id="dsPillsBody"></div></div>
   </div>
 </div>
 
@@ -1081,6 +1099,32 @@
 <footer>Sketch tool for well design concepts — not for engineering certification or as-built records.</footer>
 
 <script>
+// click-to-type editor for the scale-break (split) depth labels, shared by Casing Design and Drill String Design
+window.splitDepthEditor = function(textEl, current, onCommit){
+  const r = textEl.getBoundingClientRect();
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.step = '1'; inp.value = current;
+  inp.title = 'Type a depth (m) and press Enter. Empty = automatic. Esc cancels.';
+  inp.style.cssText = `position:fixed;z-index:9999;width:78px;left:${Math.max(4, r.right-78)}px;top:${r.top-5}px;`+
+    'font:700 12px monospace;padding:2px 4px;background:#fff;color:#000;border:2px solid #f5a623;border-radius:3px;';
+  document.body.appendChild(inp);
+  inp.focus(); inp.select();
+  let done = false;
+  const finish = (commit)=>{
+    if (done) return; done = true;
+    const v = inp.value.trim();
+    inp.remove();
+    if (!commit) return;
+    onCommit(v==='' ? null : parseFloat(v));
+  };
+  inp.addEventListener('keydown', e=>{
+    e.stopPropagation();
+    if (e.key==='Enter') finish(true);
+    else if (e.key==='Escape') finish(false);
+  });
+  inp.addEventListener('blur', ()=>finish(true));
+  ['pointerdown','click','dblclick'].forEach(t=>inp.addEventListener(t, e=>e.stopPropagation()));
+};
 (function(){
 
   /* ---------------- Component type definitions ---------------- */
@@ -1118,7 +1162,34 @@
     components: [], // {id,type,label,top,bot,od,weight,grade,color,cementTop,cemented}
     geology: [], // formation tops: {id,name,lithology,top,bot,color}
     testingZones: [], // well test intervals: {id,name,testType,top,bot,color}
-    bitsRecords: [], // bit run log: {id,bitNo,size,type,iadc,manufacturer,serialNo,depthIn,depthOut,hours,dullGrade,remarks}. A rerun's Bit No. ends in "RR" (e.g. "3RR") — its size/type/iadc/manufacturer/serialNo are synced from that bit's first run, not stored independently.
+    bitsRecords: [
+      {id:1,bitNo:'1',runDate:'2026-02-25',size:24.0,type:'B819M',iadc:'115',manufacturer:'Smith',serialNo:'SP1106',depthIn:51,depthOut:497,hours:48.15,dullGrade:'0-0-NO-A-X-I-NO-TQ',remarks:'Проверка насадок- чисто.'},
+      {id:2,bitNo:'1RR1',runDate:'2026-02-28',size:24.0,type:'B819M',iadc:'115',manufacturer:'Smith',serialNo:'SP1106',depthIn:497,depthOut:681,hours:13.5,dullGrade:'0-0-NO-A-X-I-NO-LOG',remarks:'Каротаж'},
+      {id:3,bitNo:'2',runDate:'2026-03-10',size:17.5,type:'MS716M',iadc:'M423',manufacturer:'Smith',serialNo:'SP1221',depthIn:681,depthOut:1419,hours:77.7,dullGrade:'2-1-ВТ-А-Х-IN-CT-PR',remarks:'Падение проходки'},
+      {id:4,bitNo:'3',runDate:'2026-03-16',size:17.5,type:'ВТ716М',iadc:'S423',manufacturer:'Smith',serialNo:'SP9334',depthIn:1419,depthOut:2701,hours:110.25,dullGrade:'0-1-CT-S-X-I-RR-BHA',remarks:'Замена РУС и долота'},
+      {id:5,bitNo:'4',runDate:'2026-03-26',size:17.5,type:'MS716M',iadc:'M423',manufacturer:'Smith/SLB',serialNo:'SP1221',depthIn:2701,depthOut:3215,hours:55.5,dullGrade:'0-0-NO-A-X-IN-RR-BHA',remarks:'Долото после реставрации. Чистка КЛС, долота от сальников'},
+      {id:6,bitNo:'4RR1',runDate:'2026-04-02',size:17.5,type:'MS716M',iadc:'M423',manufacturer:'Smith/SLB',serialNo:'SP1221',depthIn:3215,depthOut:3716,hours:170,dullGrade:'1-1-CT-C-X-IN-WT-TD',remarks:'Смена КНБК'},
+      {id:7,bitNo:'4RR2',runDate:'2026-04-13',size:17.5,type:'MS716M',iadc:'M423',manufacturer:'Smith/SLB',serialNo:'SP1221',depthIn:3716,depthOut:3716,hours:null,dullGrade:'',remarks:'Подъём под ГИС'},
+      {id:8,bitNo:'5',runDate:'2026-04-30',size:12.25,type:'ZS516',iadc:'',manufacturer:'ZMS',serialNo:'421',depthIn:null,depthOut:null,hours:null,dullGrade:'1-1-WT-A-X-IN-RR-BHA',remarks:'Разбурка МСЦ, ЦКОД'},
+      {id:9,bitNo:'6',runDate:'2026-05-04',size:12.25,type:'ZS 66',iadc:'',manufacturer:'ZMS',serialNo:'623',depthIn:3716,depthOut:4560,hours:140.25,dullGrade:'0-1-СТ-S-X-IN-NO-DMF',remarks:'Смена КНБК'},
+      {id:10,bitNo:'6RR1',runDate:'2026-05-17',size:12.25,type:'ZS 66',iadc:'',manufacturer:'ZMS',serialNo:'623',depthIn:4560,depthOut:4570,hours:5.25,dullGrade:'0-1-СТ-S-X-IN-NO-TD',remarks:'TD и Каротаж'},
+      {id:11,bitNo:'6RR2',runDate:'2026-06-02',size:12.25,type:'ZS 66',iadc:'',manufacturer:'ZMS',serialNo:'623',depthIn:4570,depthOut:4570,hours:null,dullGrade:'0-1-СТ-S-X-IN-NO-TD',remarks:'КСПО'},
+      {id:12,bitNo:'7',runDate:'2026-06-16',size:8.5,type:'SB517',iadc:'517',manufacturer:'Smith/SLB',serialNo:'RS9600',depthIn:4570,depthOut:4570,hours:null,dullGrade:'1-0-WT-N(3)-E-I-NO-Log',remarks:'Разбурка МСЦ, ЦКОД'},
+      {id:13,bitNo:'8',runDate:'2026-07-09',size:8.5,type:'BXTZ816',iadc:'',manufacturer:'SLB',serialNo:'QG3979',depthIn:4570,depthOut:5000,hours:195,dullGrade:'2-2-WT-S-X-I-DEL-PR',remarks:'Падение проходки'},
+      {id:14,bitNo:'9',runDate:'2026-07-22',size:8.5,type:'XS616',iadc:'',manufacturer:'SLB',serialNo:'JP3942',depthIn:5000,depthOut:5074,hours:54.5,dullGrade:'3-2-CT-A-X-IN-WT-RIG',remarks:'Подъем из-за ремонта насосов 1 и 2'},
+      {id:15,bitNo:'7RR',runDate:'2026-07-28',size:8.5,type:'SB517',iadc:'517',manufacturer:'Smith/SLB',serialNo:'RS9600',depthIn:5074,depthOut:5074,hours:0,dullGrade:'1-0-WT-N(3)-E-I-NO-RIG',remarks:'Смена КНБК'},
+      {id:16,bitNo:'10',runDate:'2026-08-10',size:8.5,type:'MDZSI813UEBPX',iadc:'',manufacturer:'SLB',serialNo:'JJ5524',depthIn:5074,depthOut:5130,hours:17,dullGrade:'0-1-CT-N -X-I-PN-CP',remarks:'Подъем для отбора керна'},
+      {id:17,bitNo:'11',runDate:'2026-08-13',size:8.5,type:'PC913',iadc:'333',manufacturer:'PetroTool',serialNo:'AK2001',depthIn:5130,depthOut:5148,hours:26,dullGrade:'0-1-WT-S-X-I-PN-BHA',remarks:'Смена КНБК'},
+      {id:18,bitNo:'10R',runDate:'2026-08-16',size:8.5,type:'MDZSI813UEBPX',iadc:'',manufacturer:'SLB',serialNo:'JJ5524',depthIn:5148,depthOut:5208,hours:27,dullGrade:'1-1-WT-A-X-I-SPA-LOG',remarks:'Подъем для ГИС'},
+      {id:19,bitNo:'7RR',runDate:'2026-08-22',size:8.5,type:'SB517',iadc:'517',manufacturer:'Smith/SLB',serialNo:'RS9600',depthIn:5208,depthOut:5208,hours:null,dullGrade:'1-0-WT-N(3)-E-I-NO-LOG',remarks:'КСПО перед MDT'},
+      {id:20,bitNo:'10RR2',runDate:'2026-08-27',size:8.5,type:'MDZSI813UEBPX',iadc:'',manufacturer:'SLB',serialNo:'JJ5524',depthIn:5208,depthOut:5244,hours:30.26,dullGrade:'0-0-WT-A-X-IN-NO-DTF',remarks:'Сбой телеметрии SLB'},
+      {id:21,bitNo:'13',runDate:'2026-08-31',size:8.5,type:'XS616',iadc:'',manufacturer:'SLB',serialNo:'JP3942',depthIn:5244,depthOut:5477,hours:126,dullGrade:'1-3-DC-S-X-IN-WC-CP',remarks:'Подъем для отбора керна'},
+      {id:22,bitNo:'11RR',runDate:'2026-09-08',size:8.5,type:'PC913',iadc:'333',manufacturer:'PetroTool',serialNo:'AK2001',depthIn:5477,depthOut:5489,hours:26,dullGrade:'0-1-WT-S-X-I-ER-BHA',remarks:'Смена КНБК'},
+      {id:23,bitNo:'12RR',runDate:'2026-09-11',size:8.5,type:'MDZSI813UEBPX',iadc:'',manufacturer:'SLB',serialNo:'JJ5524',depthIn:5489,depthOut:5549,hours:71,dullGrade:'',remarks:'Слом по резьбой части долота.'},
+      {id:24,bitNo:'17',runDate:'2026-09-22',size:8.5,type:'SB517PS',iadc:'517',manufacturer:'SLB',serialNo:'RS3014',depthIn:5549,depthOut:5553,hours:9.5,dullGrade:'0-0-NO-A-EEE-IN-JD-BHA',remarks:'Смена КНБК'},
+      {id:25,bitNo:'18',runDate:'2026-09-24',size:8.5,type:'BXTZ816S',iadc:'',manufacturer:'SLB',serialNo:'QG3978',depthIn:5553,depthOut:5680,hours:62.8,dullGrade:'0-1-CT-N-X-IN-NO-СР',remarks:'Подъём под керн'},
+      {id:26,bitNo:'19',runDate:'2026-09-30',size:8.5,type:'PC716-583',iadc:'S123',manufacturer:'PetroTool',serialNo:'AI 1313',depthIn:5680,depthOut:null,hours:null,dullGrade:'',remarks:''}
+    ], // bit run log: {id,bitNo,runDate,size,type,iadc,manufacturer,serialNo,depthIn,depthOut,hours,dullGrade,remarks}. A rerun's Bit No. ends in "RR" (e.g. "3RR") — its size/type/iadc/manufacturer/serialNo are synced from that bit's first run, not stored independently. Pre-filled from Bit_Record_Well_M-1.xlsx.
     // per-Section casing/shoe pressure-test data, keyed by sectionKey (String(sectionNumber), or 'none'):
     // {casingPressure (bar), casingFluidDensity (sg), shoePressure (bar), shoeFluidDensity (sg)}
     sectionTestData: {}
@@ -1128,7 +1199,7 @@
   const GEOLOGY_COLORS = ['#C9A876','#A8925C','#8B7355','#D4B896','#B5A582','#9C8862','#7D6B4E','#E0C9A6'];
   let nextTestingZoneId = 1;
   const TESTING_ZONE_COLORS = ['#E85D75','#5DA9E8','#E8B85D','#7ED88F','#B87EE8','#E87E5D'];
-  let nextBitId = 1;
+  let nextBitId = 27;
   let selectedId = null;
   let selectedVolId = null; // id of the currently selected volume group, shown in the Inspector
   let selectedGeologyId = null; // id of the currently selected formation, shown in the Inspector
@@ -1555,6 +1626,8 @@
     render();
   }
   function round1(v){ return Math.round(v*10)/10; }
+  // depth interval for diagram labels, with the length in brackets: "1320.4\u20131448.4 m (128 m)"
+  function ivlText(top,bot){ const len = round1(bot-top); return `${top}\u2013${bot} m` + (len>0 ? ` (${len} m)` : ''); }
   // Point components (packer/hanger/annularpacker/note) should always be a single depth, never
   // a range — this self-heals any loaded component whose bot has drifted from its top, e.g.
   // from an older version of a saved file, rather than silently rendering a phantom length.
@@ -1725,7 +1798,7 @@
       return oa - ob;
     });
     if (!list.length){
-      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;color:var(--text-muted);padding:20px;">No components yet.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;color:var(--text-muted);padding:20px;">No components yet.</td></tr>`;
       return;
     }
     const sectionOptions = Array.from({length:10}, (_,n)=>n+1); // Section 1-10
@@ -1753,7 +1826,7 @@
             <input type="number" class="table-cell-input section-test-input" data-section-key="${sectionKey}" data-field="${key}" value="${td[key]!=null?td[key]:''}" placeholder="—" style="width:64px;">
             <span style="color:var(--text-muted);font-size:10px;">${unit}</span>
           </span>`;
-        headerRow = `<tr class="table-view-section-header"><td colspan="14" style="font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:0.05em;color:var(--text-muted);background:var(--panel);padding:6px 10px;">
+        headerRow = `<tr class="table-view-section-header"><td colspan="15" style="font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:0.05em;color:var(--text-muted);background:var(--panel);padding:6px 10px;">
           <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:normal;font-weight:400;">
               <input type="checkbox" class="section-hide-toggle" data-section-key="${sectionKey}" ${sectionHidden?'checked':''}>
@@ -1788,7 +1861,8 @@
         <td>${c.weight!=null && c.weight!=='' ? c.weight : '\u2014'}</td>
         <td>${c.grade || '\u2014'}</td>
         <td>${cementedText}</td>
-        <td style="text-align:center;"><input type="checkbox" class="table-visible-toggle" data-comp-id="${c.id}" ${c.hidden?'':'checked'} title="Show/hide in drawing"></td>
+        <td style="text-align:center;"><input type="checkbox" class="table-visible-toggle" data-comp-id="${c.id}" ${c.hidden?'':'checked'} title="Show/hide component in drawing"></td>
+        <td style="text-align:center;"><input type="checkbox" class="table-label-toggle" data-comp-id="${c.id}" ${c.labelHidden?'':'checked'} title="Show/hide label in drawing"></td>
         <td>${reorderCell}</td>
       </tr>`;
     }).join('');
@@ -1797,6 +1871,12 @@
         const id = parseInt(cb.dataset.compId);
         const c = list.find(x=>x.id===id);
         if (c){ c.hidden = !cb.checked; render(); }
+      });
+    });
+    tbody.querySelectorAll('.table-label-toggle').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const c = list.find(x=>x.id===parseInt(cb.dataset.compId));
+        if (c){ c.labelHidden = !cb.checked; render(); }
       });
     });
     // Drag-and-drop reordering — same tableOrder mechanism and same-section restriction as
@@ -1982,11 +2062,53 @@
       .filter(b=> b.id!==excludeId && String(b.bitNo||'').trim()===base && !bitRerunBaseNo(b.bitNo))
       .sort((a,b)=>a.id-b.id)[0] || null;
   }
+  // Current column sort for the Bits Records table — defaults to Depth In ascending (the
+  // table's original, drilling-chronological order), and persists across re-renders/edits
+  // until the person clicks a different header.
+  let bitsSortKey = 'depthIn';
+  let bitsSortDir = 1; // 1 = ascending, -1 = descending
+  function bitsSortValue(b, key){
+    if (key==='footage') return Math.abs((b.depthOut||0)-(b.depthIn||0));
+    return b[key];
+  }
+  function renderBitsRecordsHeader(){
+    document.querySelectorAll('#bitsRecordsHeaderRow th[data-sort-key]').forEach(th=>{
+      const key = th.dataset.sortKey;
+      const isActive = key===bitsSortKey;
+      th.classList.toggle('sort-active', isActive);
+      const label = th.textContent.replace(/[▲▼]\s*$/,'').trim();
+      const arrow = isActive ? (bitsSortDir===1?'▲':'▼') : '▲';
+      th.innerHTML = `${label} <span class="sort-arrow">${isActive?arrow:''}</span>`;
+    });
+  }
+  document.querySelectorAll('#bitsRecordsHeaderRow th[data-sort-key]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.dataset.sortKey;
+      if (bitsSortKey===key){ bitsSortDir = -bitsSortDir; }
+      else { bitsSortKey = key; bitsSortDir = 1; }
+      renderBitsRecordsTable();
+    });
+  });
   function renderBitsRecordsTable(){
+    renderBitsRecordsHeader();
     const tbody = document.getElementById('bitsRecordsTbody');
-    const bits = state.bitsRecords.slice().sort((a,b)=>(a.depthIn||0)-(b.depthIn||0));
+    const numericKeys = new Set(['size','depthIn','depthOut','footage','hours']);
+    const isNumericSort = numericKeys.has(bitsSortKey);
+    const bits = state.bitsRecords.slice().sort((a,b)=>{
+      const va = bitsSortValue(a, bitsSortKey), vb = bitsSortValue(b, bitsSortKey);
+      // blank/missing values always sink to the bottom, regardless of sort direction, rather
+      // than jumping to the top on a descending sort (which would read as "most important")
+      const aEmpty = va==null || va==='', bEmpty = vb==null || vb==='';
+      if (aEmpty && bEmpty) return 0;
+      if (aEmpty) return 1;
+      if (bEmpty) return -1;
+      let cmp;
+      if (isNumericSort) cmp = (parseFloat(va)||0) - (parseFloat(vb)||0);
+      else cmp = String(va).localeCompare(String(vb), undefined, {numeric:true, sensitivity:'base'});
+      return cmp * bitsSortDir;
+    });
     if (!bits.length){
-      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;color:var(--text-muted);padding:20px;">No bit records added yet. Use "+ Add Bit Record" above.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;color:var(--text-muted);padding:20px;">No bit records added yet. Use "+ Add Bit Record" above.</td></tr>`;
       return;
     }
     // sync each rerun row's bit-identity fields from its bit's first run before drawing, so
@@ -2010,6 +2132,7 @@
       <tr>
         <td>${i+1}</td>
         <td><input type="text" class="table-cell-input bit-no-input" data-bit-id="${b.id}" value="${escAttr(b.bitNo)}" placeholder="e.g. 1 or 1RR" style="width:60px;"${pendingHint}></td>
+        <td><input type="date" class="table-cell-input bit-date-input" data-bit-id="${b.id}" value="${escAttr(b.runDate||'')}" style="width:120px;"></td>
         <td><input type="number" class="table-cell-input bit-size-input" data-bit-id="${b.id}" value="${b.size!=null?b.size:''}" step="0.125" style="width:60px;" ${inheritedAttrs}></td>
         <td><input type="text" class="table-cell-input bit-type-input" data-bit-id="${b.id}" value="${escAttr(b.type)}" placeholder="e.g. PDC M323" style="width:100px;" ${inheritedAttrs}></td>
         <td><input type="text" class="table-cell-input bit-iadc-input" data-bit-id="${b.id}" value="${escAttr(b.iadc)}" placeholder="e.g. M323" style="width:70px;" ${inheritedAttrs}></td>
@@ -2033,7 +2156,7 @@
           if (!b) return;
           b[key] = parse ? parse(inp.value) : inp.value;
           if (key==='depthIn' || key==='depthOut'){
-            const footageCell = inp.closest('tr').children[9];
+            const footageCell = inp.closest('tr').children[10];
             if (footageCell) footageCell.textContent = round1(Math.abs((b.depthOut||0)-(b.depthIn||0)));
           }
         });
@@ -2045,6 +2168,7 @@
     tbody.querySelectorAll('.bit-no-input').forEach(inp=>{
       inp.addEventListener('change', ()=> renderBitsRecordsTable());
     });
+    field('.bit-date-input','runDate', v=>v===''?null:v);
     field('.bit-size-input','size', v=>v===''?null:parseFloat(v));
     field('.bit-type-input','type');
     field('.bit-iadc-input','iadc');
@@ -2700,6 +2824,21 @@
           if (which==='top') manualSplitTopDepth = null; else manualSplitBottomDepth = null;
           render();
         });
+        // depth label sits above the drag area: click it to type the split depth
+        depthLabel.style.cursor = 'text'; depthLabel.style.textDecoration = 'underline';
+        depthLabel.setAttribute('pointer-events','all');
+        const tt = document.createElementNS(svgNS,'title'); tt.textContent = 'Click to type the split depth (m)'; depthLabel.appendChild(tt);
+        ['pointerdown','dblclick'].forEach(t=>depthLabel.addEventListener(t, e=>e.stopPropagation()));
+        depthLabel.addEventListener('click', e=>{
+          e.stopPropagation();
+          window.splitDepthEditor(depthLabel, round1(depthMd), v=>{
+            if (v==null || isNaN(v)){ if (which==='top') manualSplitTopDepth = null; else manualSplitBottomDepth = null; }
+            else if (which==='top') manualSplitTopDepth = round1(Math.max(1, Math.min(v, splitBottomDepth()-1)));
+            else manualSplitBottomDepth = round1(Math.min(state.totalDepth, Math.max(v, splitTopDepth()+1)));
+            render();
+          });
+        });
+        breakG.appendChild(depthLabel);
         svg.appendChild(breakG);
       };
       renderBreakMarker('top', MARGIN_TOP + topH + SPLIT_GAP/2, splitTopDepth());
@@ -2743,6 +2882,7 @@
 
     // components
     computeActivityLaneOffsets();
+    const activityEls = []; // drawn after the Volume Calculator overlays so they stay in front
     const kindDrawPriority = { casing:0, openhole:0, tubing:1, packer:2, hanger:2, annularpacker:2, perf:3, note:4, drillingactivity:4, drillingactivityinterval:4 };
     state.components.slice().filter(c=>{
       const sectionKey = c.sectionNumber!=null ? String(c.sectionNumber) : 'none';
@@ -2757,7 +2897,7 @@
       if (flaggedIds.has(c.id)) el.classList.add('flagged');
       const zoneHidesThis = c.kind==='perf' && c.testingZoneId!=null && !!state.testingZones.find(z=>z.id===c.testingZoneId)?.hidden;
       if (c.hidden || zoneHidesThis) el.classList.add('comp-hidden');
-      svg.appendChild(el);
+      if (c.kind==='drillingactivity' || c.kind==='drillingactivityinterval') activityEls.push(el); else svg.appendChild(el);
     });
     updateWarningBanner(warnings);
 
@@ -2798,9 +2938,10 @@
       const unitLabel = volCalcUnit==='m3' ? 'm\u00b3' : 'bbl';
       const displayVol = volCalcUnit==='m3' ? (totalVolumeBbl*0.158987) : totalVolumeBbl;
       appendLabelGroup(svgNS, volG, group, CENTER_X+anchorRadialMidPx, anchorY, rightLabelX(), anchorY-2,
-        group.name || 'Volume', [`${displayVol.toFixed(2)} ${unitLabel}`, `${minTop}\u2013${maxBot} m`]);
+        group.name || 'Volume', [`${displayVol.toFixed(2)} ${unitLabel}`, ivlText(minTop,maxBot)]);
       svg.appendChild(volG);
     });
+    activityEls.forEach(el=>svg.appendChild(el));
 
     // subtle guide lines showing the label boundaries on each side
     svg.appendChild(labelBoundaryLines(svgNS));
@@ -3041,7 +3182,7 @@
       const sizeLine = `${c.od}" \u00b7 ${weightDisplay} \u00b7 ${c.grade||'TBD'}`;
       const threadsLine = `${c.threads||'TBD'}`;
       const odIdLine = `${c.od}" OD / ${innerD}" ID`;
-      const intervalLine = `${c.top}\u2013${c.bot} m`;
+      const intervalLine = ivlText(c.top,c.bot);
       const labelLines = [sizeLine, threadsLine, odIdLine, intervalLine];
       const anchY = labelAnchorY(c, y1, y2, 'bottom');
       appendLabelGroup(svgNS, g, c, CENTER_X+hw, anchY, rightLabelX(), anchY-2, c.label, labelLines);
@@ -3195,6 +3336,7 @@
     } else if (c.kind==='drillingactivity'){
       const y = mdToY(c.top);
       const ax = CENTER_X + (activityLaneOffsetById.get(c.id)||0);
+      let lblAx = ax, lblBx = ax+12;
       if (c.type === 'fishing'){
         // Fishing events are drawn as a triangle (a "fish" in the hole), rather than the
         // plain dot used by other point-in-time activities — distinct at a glance.
@@ -3217,6 +3359,72 @@
           arm.setAttribute('stroke-linecap','round');
           g.appendChild(arm);
         });
+      } else if (c.type === 'kick'){
+        // Kick (formation fluid influx): a wavy arrow entering from the wall of the well on each side
+        // and pointing in towards the centre. The wall is the innermost bore at this depth.
+        let wallHw = null;
+        state.components.forEach(o=>{
+          if (o.top>c.top || o.bot<c.top) return;
+          let w = null;
+          if (o.kind==='casing') w = halfW(o.innerDiameter!=null ? o.innerDiameter : o.od);
+          else if (o.kind==='openhole') w = halfW(o.od);
+          if (w!=null) wallHw = (wallHw==null) ? w : Math.min(wallHw, w);
+        });
+        if (wallHw==null) wallHw = hw;
+        const amp = 1.5, lambda = 7, upLen = 26;
+        [-1,1].forEach(side=>{
+          const x0 = CENTER_X + side*wallHw;
+          const dir = -side;                                  // horizontal travel: towards the centre
+          const hLen = wallHw/2;                              // goes halfway to the centre ...
+          const xm = x0 + dir*hLen;
+          let d = `M ${x0} ${y}`;
+          for (let t=1; t<=hLen; t+=1) d += ` L ${x0+dir*t} ${y + amp*Math.sin(2*Math.PI*t/lambda)*Math.min(1,t/5)}`;
+          const yTurn = y + amp*Math.sin(2*Math.PI*hLen/lambda);
+          for (let u=1; u<=upLen-5; u+=1) d += ` L ${xm + amp*Math.sin(2*Math.PI*u/lambda)} ${yTurn-u}`; // ... then turns and rises
+          const wave = document.createElementNS(svgNS,'path');
+          wave.setAttribute('d', d); wave.setAttribute('fill','none'); wave.setAttribute('stroke', c.color);
+          wave.setAttribute('stroke-width','1.3'); wave.setAttribute('stroke-linecap','round'); wave.setAttribute('stroke-linejoin','round');
+          g.appendChild(wave);
+          const yTip = yTurn-upLen;
+          const head = document.createElementNS(svgNS,'path');
+          head.setAttribute('d', `M ${xm} ${yTip} L ${xm-3} ${yTip+5.5} L ${xm+3} ${yTip+5.5} Z`);
+          head.setAttribute('fill', c.color);
+          g.appendChild(head);
+          g.appendChild(hitRect(svgNS, Math.min(x0, xm)-4, yTip, hLen+8, upLen+8));
+        });
+        lblAx = CENTER_X+wallHw; lblBx = lblAx+12;
+      } else if (c.type === 'lostcirculation'){
+        // Lost Circulation: wavy arrows leaving the well through the wall on both sides (mud
+        // flowing out into the formation), starting at the widest wellbore wall at this depth
+        let wellHw = hw;
+        state.components.forEach(o=>{
+          if ((o.kind==='casing' || o.kind==='openhole') && o.od!=null && o.top<=c.top && o.bot>=c.top) wellHw = Math.max(wellHw, halfW(o.od));
+        });
+        const L = 28, amp = 1.3, lambda = 7, spread = 26 * Math.PI/180; // three small arrows per side, fanning out from ONE start point on the wall
+        [-1,1].forEach(side=>{
+          const x0 = CENTER_X + side*wellHw;
+          [-spread,0,spread].forEach(th=>{
+            const ux = side*Math.cos(th), uy = Math.sin(th); // direction of travel
+            const px = -uy, py = ux;                          // perpendicular (for the wave)
+            let d = `M ${x0} ${y}`;
+            for (let t=1; t<=L-3; t+=1){
+              const w = amp*Math.sin(2*Math.PI*t/lambda)*Math.min(1, t/4); // wave grows out of the single start point
+              d += ` L ${x0+ux*t+px*w} ${y+uy*t+py*w}`;
+            }
+            const wave = document.createElementNS(svgNS,'path');
+            wave.setAttribute('d', d); wave.setAttribute('fill','none'); wave.setAttribute('stroke', c.color);
+            wave.setAttribute('stroke-width','1.2'); wave.setAttribute('stroke-linecap','round'); wave.setAttribute('stroke-linejoin','round');
+            g.appendChild(wave);
+            const tx = x0+ux*L, ty = y+uy*L;
+            const head = document.createElementNS(svgNS,'path');
+            head.setAttribute('d', `M ${tx} ${ty} L ${tx-ux*5+px*2.5} ${ty-uy*5+py*2.5} L ${tx-ux*5-px*2.5} ${ty-uy*5-py*2.5} Z`);
+            head.setAttribute('fill', c.color);
+            g.appendChild(head);
+          });
+          const reach = L*Math.cos(spread), vr = L*Math.sin(spread)+6;
+          g.appendChild(hitRect(svgNS, Math.min(x0, x0+side*L), y-vr, L, vr*2));
+        });
+        lblAx = CENTER_X+wellHw; lblBx = CENTER_X+wellHw+L+8; // leader connects to the point where the arrows start; text sits beyond the arrow tips
       } else {
         const marker = document.createElementNS(svgNS,'circle');
         marker.setAttribute('cx', ax); marker.setAttribute('cy', y); marker.setAttribute('r', 5);
@@ -3224,8 +3432,8 @@
         marker.setAttribute('stroke', 'var(--bg)'); marker.setAttribute('stroke-width','1.5');
         g.appendChild(marker);
       }
-      appendLabelGroup(svgNS, g, c, ax, y, ax+12, y+3, c.label, `@ ${c.top} m`);
-      g.appendChild(hitRect(svgNS, ax-8, y-8, 16, 16));
+      appendLabelGroup(svgNS, g, c, lblAx, y, lblBx, y+3, c.label, `@ ${c.top} m`);
+      if (c.type!=='lostcirculation' && c.type!=='kick') g.appendChild(hitRect(svgNS, ax-8, y-8, 16, 16));
     } else if (c.kind==='drillingactivityinterval'){
       const ax = CENTER_X + (activityLaneOffsetById.get(c.id)||0);
       const tickHw = 6;
@@ -3254,7 +3462,7 @@
         g.appendChild(vline);
       }
       const anchY = labelAnchorY(c, y1, y2, 'middle');
-      const intervalSub = [`${round1(c.top)}–${round1(c.bot)} m`];
+      const intervalSub = [ivlText(round1(c.top),round1(c.bot))];
       if (c.type==='coring'){
         intervalSub.push(`Footage: ${round1(Math.abs(c.bot-c.top))} m`);
         if (c.recoveryPct!=null) intervalSub.push(`Recovery: ${round1(c.recoveryPct)}%`);
@@ -3304,7 +3512,7 @@
         });
       }
       const ohAnchY = labelAnchorY(c, y1, y2, 'middle');
-      appendLabelGroup(svgNS, g, c, CENTER_X-hw, ohAnchY, leftLabelX(), ohAnchY-2, c.label, [`${c.od}"`, `${c.top}\u2013${c.bot} m`]);
+      appendLabelGroup(svgNS, g, c, CENTER_X-hw, ohAnchY, leftLabelX(), ohAnchY-2, c.label, [`${c.od}"`, ivlText(c.top,c.bot)]);
       g.appendChild(hitRect(svgNS, CENTER_X-hw-5, y1, hw*2+10, y2-y1));
       g.appendChild(handleRect(svgNS, CENTER_X-hw-5, y1-3, hw*2+10, 'top'));
       g.appendChild(handleRect(svgNS, CENTER_X-hw-5, y2-3, hw*2+10, 'bot'));
@@ -3328,7 +3536,7 @@
         });
       }
       const hitHalf = baseHw + spikeLen + 6;
-      const perfLines = [`${c.top}\u2013${c.bot} m \u00b7 ${round1(c.bot-c.top)} m`];
+      const perfLines = [ivlText(c.top,c.bot)];
       if (c.gun || c.spf){
         const parts = [];
         if (c.gun) parts.push(`Gun: ${c.gun}`);
@@ -3389,7 +3597,9 @@
     // disconnect the leader from where the marker actually is.
     let effAnchorX = anchorX;
     const isLaneStackedActivity = (comp.kind==='drillingactivity' || comp.kind==='drillingactivityinterval');
-    if (!isLaneStackedActivity && ((lx < CENTER_X && anchorX > CENTER_X) || (lx > CENTER_X && anchorX < CENTER_X))){
+    // Kick / Lost Circulation draw arrows on BOTH sides, so their leader attaches to the arrow origin on whichever side the label sits
+    const isTwoSidedActivity = comp.kind==='drillingactivity' && (comp.type==='kick' || comp.type==='lostcirculation');
+    if ((!isLaneStackedActivity || isTwoSidedActivity) && ((lx < CENTER_X && anchorX > CENTER_X) || (lx > CENTER_X && anchorX < CENTER_X))){
       effAnchorX = CENTER_X - (anchorX - CENTER_X);
     }
     const lg = document.createElementNS(svgNS,'g');
@@ -3877,7 +4087,7 @@
       ${comp.type==='coring' ? `
       <div class="insp-field"><label>Recovery (%)</label><input type="number" id="f_recoveryPct" value="${comp.recoveryPct!=null?comp.recoveryPct:''}" step="1" min="0" max="100" placeholder="e.g. 85"></div>
       ` : ''}
-      <div class="insp-field"><label>Remarks</label><textarea id="f_remarks" rows="3" style="width:100%;resize:vertical;">${escAttr(comp.remarks||'')}</textarea></div>
+      <div class="insp-field"><label>Remarks</label><textarea id="f_remarks" rows="15" style="width:100%;min-height:15em;resize:vertical;line-height:1.4;">${escAttr(comp.remarks||'')}</textarea></div>
       ` : ''}
       ${comp.kind==='annularpacker' ? (()=>{
         const candidates = state.components.filter(o=> o.id!==comp.id && o.kind==='casing');
@@ -3916,7 +4126,7 @@
       })() : ''}
       ${comp.kind!=='perf' && comp.kind!=='hanger' ? `
       <div class="insp-row">
-        <div class="insp-field"><label>OD (in)</label><input type="number" id="f_od" value="${comp.od}" step="0.125"></div>
+        ${((comp.kind==='drillingactivity'||comp.kind==='drillingactivityinterval') && comp.type!=='coring' && comp.type!=='sidetrack') ? '' : `<div class="insp-field"><label>OD (in)</label><input type="number" id="f_od" value="${comp.od}" step="0.125"></div>`}
         ${(comp.kind==='casing'||comp.kind==='tubing') ? `<div class="insp-field"><label>ID (in)</label><input type="number" id="f_id" value="${comp.innerDiameter!=null?comp.innerDiameter:round1(comp.od*0.9)}" step="0.125"></div>` : `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>`}
       </div>
       ${(comp.kind==='casing'||comp.kind==='tubing') ? `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>` : ''}` : (comp.kind!=='hanger' ? `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>` : '')}
@@ -3986,6 +4196,9 @@
     bind('f_activityDate','change', e=>{ comp.activityDate = e.target.value; render({skipInspector:true}); });
     bind('f_activityDuration','input', e=>{ comp.activityDuration = e.target.value===''?null:parseFloat(e.target.value); render({skipInspector:true}); });
     bind('f_recoveryPct','input', e=>{ comp.recoveryPct = e.target.value===''?null:Math.max(0,Math.min(100,parseFloat(e.target.value))); render({skipInspector:true}); });
+    // Remarks box is exactly 15 lines tall; longer text scrolls inside it (user can still drag-resize)
+    const fitRemarks = ()=>{ const t=document.getElementById('f_remarks'); if(t){ const lh=parseFloat(getComputedStyle(t).lineHeight)||20; const minH=Math.round(lh*15)+12; t.style.minHeight=minH+'px'; t.style.height=minH+'px'; t.style.overflowY='auto'; } };
+    fitRemarks();
     bind('f_remarks','input', e=>{ comp.remarks = e.target.value; render({skipInspector:true}); });
     bind('f_color','input', e=>{ comp.color=e.target.value; render({skipInspector:true}); });
     bind('f_weight','input', e=>{ comp.weight=e.target.value; render({skipInspector:true}); });
@@ -4394,9 +4607,9 @@
     nextId = state.components.reduce((max,c)=>Math.max(max,(c.id||0)+1),1);
     selectedId = null; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
     volumeGroups = Array.isArray(data.volumeGroups) ? data.volumeGroups : [];
-    state.geology = Array.isArray(data.geology) ? data.geology : [];
-    state.testingZones = Array.isArray(data.testingZones) ? data.testingZones : [];
-    state.bitsRecords = Array.isArray(data.bitsRecords) ? data.bitsRecords : [];
+    // Geology, Testing Zones and Bits Records are shared across every design in the Designs
+    // Manager (not swapped per-design) — see the note on collectCurrentDesignData() — so
+    // switching designs here deliberately leaves state.geology/testingZones/bitsRecords alone.
     state.sectionTestData = (data.sectionTestData && typeof data.sectionTestData==='object') ? data.sectionTestData : {};
     currentlyLoadedManagerDesignId = d.id;
     render();
@@ -4412,6 +4625,12 @@
   document.getElementById('designsManagerOverlay').addEventListener('click', e=>{
     if (e.target.id==='designsManagerOverlay') e.target.style.display = 'none';
   });
+  // Per-design snapshot for the Designs Manager. Geology, Testing Zones and Bits Records are
+  // deliberately NOT included here — the user wants those shared across every design in this
+  // file rather than duplicated per design, so they live only in state.geology/testingZones/
+  // bitsRecords and are left untouched whenever a design is switched, loaded, or saved (see
+  // the designSwitcher/dmgrLoad handlers). sectionTestData stays per-design, since casing/shoe
+  // pressure-test data is specific to one well's casing design.
   function collectCurrentDesignData(){
     return {
       format: 'wellbore-sketch', version: 1,
@@ -4422,9 +4641,6 @@
       theme: currentThemeKey,
       components: state.components,
       volumeGroups: volumeGroups,
-      geology: state.geology,
-      testingZones: state.testingZones,
-      bitsRecords: state.bitsRecords,
       sectionTestData: state.sectionTestData,
     };
   }
@@ -4438,8 +4654,8 @@
   // New — starts a fully blank design (unlike Clear, which only empties the wellbore and
   // leaves Well Name/Total Depth/Version/Notes as they were)
   document.getElementById('dmgrNew').addEventListener('click', ()=>{
-    csConfirm('Start a new blank design? Any unsaved changes to the current design will be lost.', ()=>{
-      state.components = []; selectedId = null; selectedVolId = null; volumeGroups = []; state.geology = []; state.testingZones = []; state.sectionTestData = {}; state.bitsRecords = []; selectedGeologyId = null; selectedTestingZoneId = null;
+    csConfirm('Start a new blank design? Any unsaved changes to the current design will be lost. (Geology, Testing Zones and Bits Records are shared across all designs, so they are left as they are.)', ()=>{
+      state.components = []; selectedId = null; selectedVolId = null; volumeGroups = []; state.sectionTestData = {}; selectedGeologyId = null; selectedTestingZoneId = null;
       state.totalDepth = 3200;
       document.getElementById('wellName').value = 'Well-1';
       document.getElementById('totalDepth').value = 3200;
@@ -4481,9 +4697,8 @@
     nextId = state.components.reduce((max,c)=>Math.max(max,(c.id||0)+1),1);
     selectedId = null; selectedVolId = null; selectedGeologyId = null; selectedTestingZoneId = null;
     volumeGroups = Array.isArray(data.volumeGroups) ? data.volumeGroups : [];
-    state.geology = Array.isArray(data.geology) ? data.geology : [];
-    state.testingZones = Array.isArray(data.testingZones) ? data.testingZones : [];
-    state.bitsRecords = Array.isArray(data.bitsRecords) ? data.bitsRecords : [];
+    // Geology, Testing Zones and Bits Records are shared across every design (see
+    // collectCurrentDesignData()), so loading a design deliberately leaves them as they are.
     state.sectionTestData = (data.sectionTestData && typeof data.sectionTestData==='object') ? data.sectionTestData : {};
     currentlyLoadedManagerDesignId = d.id;
     renderDesignSwitcher();
@@ -4620,7 +4835,7 @@
   });
   document.getElementById('addBitsRecordRow').addEventListener('click', ()=>{
     const lastOut = state.bitsRecords.length ? Math.max(...state.bitsRecords.map(b=>b.depthOut||0)) : 0;
-    state.bitsRecords.push({ id: nextBitId++, bitNo: String(state.bitsRecords.length+1), size: null, type:'', iadc:'', manufacturer:'', serialNo:'', depthIn: lastOut, depthOut: lastOut, hours: null, dullGrade:'', remarks:'' });
+    state.bitsRecords.push({ id: nextBitId++, bitNo: String(state.bitsRecords.length+1), runDate: null, size: null, type:'', iadc:'', manufacturer:'', serialNo:'', depthIn: lastOut, depthOut: lastOut, hours: null, dullGrade:'', remarks:'' });
     renderBitsRecordsTable();
   });
   document.getElementById('openTestingZones').addEventListener('click', ()=>{
@@ -4796,7 +5011,14 @@
   function saveCustomExample(data){
     try { localStorage.setItem('wellSketchCustomExample', JSON.stringify(data)); } catch(e){}
   }
-  let customExample = loadCustomExample();
+  // Nothing in the UI calls saveCustomExample() any more (it's a leftover from an earlier
+  // version of this tool), so this is intentionally NOT read from localStorage at startup.
+  // Chromium-based browsers share localStorage across every local (file://) page regardless
+  // of which .html file it is, so if a stale value were ever written here by an old build,
+  // reading it back here would silently overwrite this file's own built-in example/data
+  // (including Bits Records, Geology, etc.) the instant the page loads, with no way to tell
+  // from the page source alone. Leaving this null avoids that entirely.
+  let customExample = null;
   function loadDesignFromFile(file){
     const reader = new FileReader();
     reader.onload = (e)=>{
@@ -5371,7 +5593,32 @@
     );
   }
 
-  let dsState = { totalDepth: 3200, components: [] };
+  let dsState = { totalDepth: 3200, components: [], pills: [], pillMode: 'bottom' }; // totalDepth is only a description of the design; the drawing's depth range comes from the components (dsExtent)
+  const DS_MAX_MD = 30000; // hard upper limit for any typed/dragged measured depth
+  const DS_EMPTY_EXTENT = 1000; // depth range shown when the canvas has no components yet
+  let dsExtentLock = null; // frozen while a drag is in progress so the scale doesn't shift under the pointer
+  // Deepest point reached by anything drawn: drill string components and Well Features alike
+  function dsDeepest(){
+    let m = 0;
+    dsState.components.forEach(c=>{
+      const bot = DS_TYPES[c.type]?.point ? c.top + dsPointExtent(c) : c.bot;
+      if (bot > m) m = bot;
+    });
+    return m;
+  }
+  // Depth range the drawing is scaled to: the Open Hole bottom (actual well depth) when there
+  // is one, otherwise the deepest drill string component / Well Feature plus a little headroom
+  function dsExtent(){
+    if (dsExtentLock != null) return dsExtentLock;
+    const d = dsDeepest();
+    // the well's actual depth is the bottom of the Open Hole: the axis ends exactly there
+    // (or at the string's bottom if that happens to be deeper)
+    let ohBot = 0;
+    dsState.components.forEach(c=>{ if (c.type==='openhole' && c.bot>ohBot) ohBot = c.bot; });
+    if (ohBot > 0) return dsRound1(Math.max(ohBot, d));
+    if (d <= 0) return DS_EMPTY_EXTENT;
+    return dsRound1(d + Math.max(10, d*0.05));
+  }
   let dsWeightUnit = 'lbs'; // 'lbs' or 't' (metric tons) — for the Total Weight readout
   let dsWeightColUnit = 'ppf'; // 'ppf' or 'kgm' — for the per-component Weight column
   let dsTensileUnit = 'lbf'; // 'lbf' or 't' (metric tonnes-force) — for the Tensile Strength readout
@@ -5396,6 +5643,7 @@
   }
   let dsNextId = 1;
   let dsSelectedId = null;
+  let dsSelectedPillId = null; // pill selected on the drawing (shown in the Inspector)
   let dsZoom = 1, dsPanX = 0, dsPanY = 0;
   function dsApplyZoom(){
     const host = document.getElementById('dsSvgHost');
@@ -5434,12 +5682,12 @@
     return maxStringBot;
   }
   function dsHasSplit(){
-    return dsSplitScale && dsSplitDepth() > 0 && dsSplitDepth() < dsState.totalDepth;
+    return dsSplitScale && dsSplitDepth() > 0 && dsSplitDepth() < dsExtent();
   }
   function dsMdToY(md){
     const usable = DS_SVG_H - DS_MARGIN_TOP - DS_MARGIN_BOT;
     if (!dsHasSplit()){
-      return DS_MARGIN_TOP + (md/Math.max(dsState.totalDepth,1)) * usable;
+      return DS_MARGIN_TOP + (md/Math.max(dsExtent(),1)) * usable;
     }
     const split = dsSplitDepth();
     const stringH = (usable - DS_SPLIT_GAP) * (1-DS_BHA_FRACTION);
@@ -5447,13 +5695,13 @@
     if (md <= split){
       return DS_MARGIN_TOP + (md/Math.max(split,1)) * stringH;
     }
-    const bhaSpan = Math.max(dsState.totalDepth-split, 1);
+    const bhaSpan = Math.max(dsExtent()-split, 1);
     return DS_MARGIN_TOP + stringH + DS_SPLIT_GAP + ((md-split)/bhaSpan) * bhaH;
   }
   function dsYToMd(y){
     const usable = DS_SVG_H - DS_MARGIN_TOP - DS_MARGIN_BOT;
     if (!dsHasSplit()){
-      return Math.max(0, ((y-DS_MARGIN_TOP)/usable) * dsState.totalDepth);
+      return Math.max(0, ((y-DS_MARGIN_TOP)/usable) * dsExtent());
     }
     const split = dsSplitDepth();
     const stringH = (usable - DS_SPLIT_GAP) * (1-DS_BHA_FRACTION);
@@ -5462,11 +5710,12 @@
     if (relY <= stringH){
       return Math.max(0, (relY/stringH) * split);
     }
-    const bhaSpan = Math.max(dsState.totalDepth-split, 1);
+    const bhaSpan = Math.max(dsExtent()-split, 1);
     const relBhaY = relY - stringH - DS_SPLIT_GAP;
     return Math.max(split, split + (relBhaY/bhaH) * bhaSpan);
   }
   function dsRound1(v){ return Math.round(v*10)/10; }
+  function dsIvlText(top,bot){ const len = dsRound1(bot-top); return `${top}\u2013${bot} m` + (len>0 ? ` (${len} m)` : ''); }
   function escAttr(v){
     return String(v==null ? '' : v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   }
@@ -5551,7 +5800,7 @@
     return Math.max(len, 0.1) / 2;
   }
   function dsNeighborLimits(comp){
-    let minTop = 0, maxBot = dsState.totalDepth;
+    let minTop = 0, maxBot = DS_MAX_MD;
     const isWellFeature = !!DS_TYPES[comp.type]?.wellFeature;
     // Well Features (Casing, Open Hole) are independent of the drill string — they never
     // constrain drill string components and are never constrained by them — but Casing and
@@ -5638,7 +5887,7 @@
   }
 
   function dsFindFreeSlot(desiredTop, desiredBot, isPointComp, isWellFeature){
-    let minTop = 0, maxBot = dsState.totalDepth;
+    let minTop = 0, maxBot = dsExtent();
     const refBot = isPointComp ? desiredTop : desiredBot;
     if (isWellFeature){
       // Well Features don't dodge drill string components, but Casing and Open Hole still
@@ -5665,16 +5914,33 @@
     });
     return { minTop, maxBot };
   }
-  function dsAddComponent(typeKey, dropMd){
+  // Bottom of the drill string so far (Well Features are independent and ignored)
+  function dsStringBottom(){
+    let m = 0, any = false;
+    dsState.components.forEach(c=>{
+      if (DS_TYPES[c.type]?.wellFeature) return;
+      any = true;
+      m = Math.max(m, DS_TYPES[c.type]?.point ? c.top : c.bot);
+    });
+    return any ? m : null;
+  }
+  // append=true: the new component starts exactly at the previous drill string component's
+  // bottom (connected to it) instead of landing wherever it was dropped
+  function dsAddComponent(typeKey, dropMd, append){
     const def = DS_TYPES[typeKey];
     const existingOfType = dsState.components.filter(c=>c.type===typeKey).length;
     const label = def.label + (existingOfType?` ${existingOfType+1}`:'');
     let top, bot;
-    const span = typeKey==='drillpipe' ? 30 : (def.length!=null ? def.length : (def.shortSpan ? 1 : Math.max(50, dsState.totalDepth*0.15)));
-    top = dsRound1(Math.max(0, (dropMd!=null?dropMd:dsState.totalDepth*0.5) - span/2));
-    bot = dsRound1(Math.min(dsState.totalDepth, top+span));
+    const span = typeKey==='drillpipe' ? 30 : (def.length!=null ? def.length : (def.shortSpan ? 1 : Math.max(50, dsExtent()*0.15)));
+    top = dsRound1(Math.max(0, (dropMd!=null?dropMd:dsExtent()*0.5) - span/2));
+    bot = dsRound1(Math.min(dsExtent(), top+span));
+    if (append){
+      top = dsRound1(dsStringBottom() || 0);
+      bot = dsRound1(top+span);
+    }
     // clamp into the nearest free gap so a new component never lands on top of an existing one
-    const { minTop, maxBot } = dsFindFreeSlot(top, bot, false, !!def.wellFeature);
+    // (skipped when appending: it goes right after the string's current bottom)
+    const { minTop, maxBot } = append ? { minTop:-1e9, maxBot:1e9 } : dsFindFreeSlot(top, bot, false, !!def.wellFeature);
     {
       const desiredSpan = bot - top;
       const availableSpan = maxBot - minTop;
@@ -5721,7 +5987,7 @@
     t.textContent=txt; return t;
   }
 
-  const DS_VISUAL_SCALE = 0.30; // shrinks every drill string component on screen by the same factor — OD/ID/label data stays accurate, and relative proportions between components are preserved
+  const DS_VISUAL_SCALE = 0.55; // shrinks every drill string component on screen by the same factor — OD/ID/label data stays accurate, and relative proportions between components are preserved
   const STAND_STYLE_TYPES = ['drillpipe','hwdp']; // types that get the drill-pipe-style joint rendering
   function dsRenderComponent(svgNS, c){
     const g = document.createElementNS(svgNS,'g');
@@ -5737,7 +6003,7 @@
       const bodyHw = hw*0.55; // slim pipe body running through the tool
       dsDrawPointShape(svgNS, g, c, y, hw, bodyHw);
       const lx = DS_CENTER_X+hw+10;
-      const sub = [`${c.od}" OD`, `${c.top}\u2013${c.bot} m`];
+      const sub = [`${c.od}" OD`, dsIvlText(c.top,c.bot)];
       dsAppendLabel(svgNS, g, c, DS_CENTER_X+hw, y, lx, y-2, c.label, sub);
       const hit = document.createElementNS(svgNS,'rect');
       hit.setAttribute('x', DS_CENTER_X-hw-6); hit.setAttribute('y', yTop);
@@ -5779,7 +6045,7 @@
       path.setAttribute('stroke', '#000000'); path.setAttribute('stroke-width', 0.75);
       path.setAttribute('class','wall');
       g.appendChild(path);
-      const sub = [`${c.od}" OD (crown) \u00b7 ${bodyOd}" body`, `${c.top}\u2013${c.bot} m`];
+      const sub = [`${c.od}" OD (crown) \u00b7 ${bodyOd}" body`, dsIvlText(c.top,c.bot)];
       if (c.topThreads || c.bottomThreads) sub.splice(1, 0, `Threads: ${c.topThreads||'\u2014'} / ${c.bottomThreads||'\u2014'}`);
       dsAppendLabel(svgNS, g, c, DS_CENTER_X+wideHw, (yTop+yBot)/2, DS_CENTER_X+wideHw+12, (yTop+yBot)/2-2, c.label, sub);
       const hit = document.createElementNS(svgNS,'rect');
@@ -5842,7 +6108,7 @@
         stripeGroup.appendChild(stripe);
       }
       g.appendChild(stripeGroup);
-      const sub = [`${c.od}" OD (blades) \u00b7 ${bodyOd}" body`, `${c.top}\u2013${c.bot} m`];
+      const sub = [`${c.od}" OD (blades) \u00b7 ${bodyOd}" body`, dsIvlText(c.top,c.bot)];
       if (c.topThreads || c.bottomThreads) sub.splice(1, 0, `Threads: ${c.topThreads||'\u2014'} / ${c.bottomThreads||'\u2014'}`);
       dsAppendLabel(svgNS, g, c, DS_CENTER_X+bladeHw, (yTop+yBot)/2, DS_CENTER_X+bladeHw+12, (yTop+yBot)/2-2, c.label, sub);
       const hit = document.createElementNS(svgNS,'rect');
@@ -5893,7 +6159,7 @@
       const sizeLine = `${c.od}" \u00b7 ${weightDisplay} \u00b7 ${c.grade||'TBD'}`;
       const threadsLine = `${c.threadsText||'TBD'}`;
       const odIdLine = `${c.od}" OD / ${innerD}" ID`;
-      const intervalLine = `${c.top}\u2013${c.bot} m`;
+      const intervalLine = dsIvlText(c.top,c.bot);
       dsAppendLabel(svgNS, g, c, DS_CENTER_X+hw, yBot, DS_CENTER_X+hw+12, yBot-2, c.label, [sizeLine, threadsLine, odIdLine, intervalLine]);
       const hit = document.createElementNS(svgNS,'rect');
       hit.setAttribute('x', DS_CENTER_X-hw-5); hit.setAttribute('y', yTop);
@@ -5941,7 +6207,7 @@
           g.appendChild(tick);
         });
       }
-      const sub = [`${c.od}"`, `${c.top}\u2013${c.bot} m`];
+      const sub = [`${c.od}"`, dsIvlText(c.top,c.bot)];
       dsAppendLabel(svgNS, g, c, DS_CENTER_X-hw, (yTop+yBot)/2, DS_CENTER_X-hw-12, (yTop+yBot)/2-2, c.label, sub);
       const hit = document.createElementNS(svgNS,'rect');
       hit.setAttribute('x', DS_CENTER_X-hw-5); hit.setAttribute('y', yTop);
@@ -5982,7 +6248,7 @@
         strip.setAttribute('stroke', '#000000'); strip.setAttribute('stroke-width', 0.5);
         g.appendChild(strip);
       });
-      const sub = [`${c.od}" OD / ${innerId}" ID`, `${c.top}\u2013${c.bot} m`];
+      const sub = [`${c.od}" OD / ${innerId}" ID`, dsIvlText(c.top,c.bot)];
       dsAppendLabel(svgNS, g, c, DS_CENTER_X+hw, (yTop+yBot)/2, DS_CENTER_X+hw+12, (yTop+yBot)/2-2, c.label, sub);
       const hit = document.createElementNS(svgNS,'rect');
       hit.setAttribute('x', DS_CENTER_X-hw-5); hit.setAttribute('y', yTop);
@@ -6021,7 +6287,7 @@
       path.setAttribute('stroke', '#000000'); path.setAttribute('stroke-width', 0.75);
       path.setAttribute('class','wall');
       g.appendChild(path);
-      const sub = [`${c.od}" OD / ${innerId}" ID`, `${c.top}\u2013${c.bot} m`];
+      const sub = [`${c.od}" OD / ${innerId}" ID`, dsIvlText(c.top,c.bot)];
       dsAppendLabel(svgNS, g, c, DS_CENTER_X+wideHw, (yTop+yBot)/2, DS_CENTER_X+wideHw+12, (yTop+yBot)/2-2, c.label, sub);
       const hit = document.createElementNS(svgNS,'rect');
       hit.setAttribute('x', DS_CENTER_X-wideHw-5); hit.setAttribute('y', yTop);
@@ -6061,7 +6327,7 @@
       sheen.setAttribute('pointer-events','none');
       g.appendChild(sheen);
       const maxHw = Math.max(topHw, botHw);
-      const sub = [`${topOd}" \u2192 ${botOd}" OD`, `${c.top}\u2013${c.bot} m`];
+      const sub = [`${topOd}" \u2192 ${botOd}" OD`, dsIvlText(c.top,c.bot)];
       if (topConn || botConn) sub.splice(1, 0, `${topConn||'\u2014'} \u2192 ${botConn||'\u2014'}`);
       dsAppendLabel(svgNS, g, c, DS_CENTER_X+maxHw, (yTop+yBot)/2, DS_CENTER_X+maxHw+12, (yTop+yBot)/2-2, c.label, sub);
       const hit = document.createElementNS(svgNS,'rect');
@@ -6174,7 +6440,7 @@
       const weightNum = parseFloat(c.weight);
       const weightDisplay = (c.weight && !isNaN(weightNum)) ? `${weightNum} ppf` : null;
       const gradeDisplay = (['drillpipe','hwdp'].includes(c.type) && c.grade) ? c.grade : null;
-      const sub = [`${c.od}" OD / ${innerId}" ID${weightDisplay?` \u00b7 ${weightDisplay}`:''}${gradeDisplay?` \u00b7 ${gradeDisplay}`:''}`, `${c.top}\u2013${c.bot} m`];
+      const sub = [`${c.od}" OD / ${innerId}" ID${weightDisplay?` \u00b7 ${weightDisplay}`:''}${gradeDisplay?` \u00b7 ${gradeDisplay}`:''}`, dsIvlText(c.top,c.bot)];
       if (['drillpipe','hwdp'].includes(c.type) && (c.topThreads || c.bottomThreads)) sub.splice(1, 0, `TJ: ${c.tjOd?c.tjOd+'" \u00b7 ':''}${c.topThreads||'\u2014'} / ${c.bottomThreads||'\u2014'}`);
       const shapeHw = hasEndJoints ? jointHw : hw;
       dsAppendLabel(svgNS, g, c, DS_CENTER_X+shapeHw, (yTop+yBot)/2, DS_CENTER_X+shapeHw+12, (yTop+yBot)/2-2, c.label, sub);
@@ -6424,7 +6690,7 @@
   // carries the full buoyed string weight).
   function dsComputeWeightProfile(){
     const comps = dsState.components.filter(c=> !DS_TYPES[c.type]?.wellFeature).slice().sort((a,b)=>a.top-b.top);
-    if (!comps.length) return [[0,0],[dsState.totalDepth,0]];
+    if (!comps.length) return [[0,0],[dsExtent(),0]];
     const bf = dsBuoyancyFactor();
     const stringTop = comps[0].top, stringBot = comps[comps.length-1].bot;
     // build cumulative-from-bottom by walking components in reverse (deepest first)
@@ -6440,7 +6706,7 @@
     });
     points.reverse(); // back into top-to-bottom depth order for rendering
     if (points[0][0] > 0.01) points.unshift([0, points[0][1]]); // flat from surface to string top
-    if (points[points.length-1][0] < dsState.totalDepth - 0.01) points.push([dsState.totalDepth, 0]);
+    if (points[points.length-1][0] < dsExtent() - 0.01) points.push([dsExtent(), 0]);
     return points;
   }
   // Hanging weight (lbs, buoyed) at any specific depth, interpolated from the weight profile
@@ -6691,7 +6957,8 @@
       if (c.top > cursor + 0.01) gaps.push([cursor, c.top]);
       cursor = Math.max(cursor, c.bot);
     });
-    if (cursor < dsState.totalDepth - 0.01) gaps.push([cursor, dsState.totalDepth]);
+    // no faded formation texture below the deepest well feature (it read as a second open hole)
+    if (!wellFeatures.length && cursor < dsExtent() - 0.01) gaps.push([cursor, dsExtent()]);
     gaps.forEach(([top,bot])=>{
       const yTop = dsMdToY(top), yBot = dsMdToY(bot);
       [-1,1].forEach(side=>{
@@ -6814,7 +7081,7 @@
     });
   }
 
-  function dsRender(){
+  function dsRender(opts){
     DS_SVG_H = Math.max(500, Math.min((window.innerHeight-260)*1.5, 3600));
     const svgNS='http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS,'svg');
@@ -6844,7 +7111,7 @@
     const ruler = document.createElementNS(svgNS,'g');
     const usable = DS_SVG_H - DS_MARGIN_TOP - DS_MARGIN_BOT;
     const hasSplit = dsHasSplit();
-    const split = hasSplit ? dsSplitDepth() : dsState.totalDepth;
+    const split = hasSplit ? dsSplitDepth() : dsExtent();
     function dsNiceStep(raw){
       const candidates = [0.1,0.2,0.5,1,2,5,10,20,25,50,100,200,250,500,1000,2000,2500,5000,10000];
       for (const c of candidates){ if (raw<=c) return c; }
@@ -6863,8 +7130,10 @@
     }
     if (!hasSplit){
       // tick density scales with zoom — zooming in reveals finer depth increments
-      const step = dsNiceStep(dsState.totalDepth / (10*dsZoom));
-      for (let d=0; d<=dsState.totalDepth; d+=step) addTick(d);
+      const step = dsNiceStep(dsExtent() / (10*dsZoom));
+      let lastTick = 0;
+      for (let d=0; d<=dsExtent(); d+=step){ addTick(d); lastTick = d; }
+      if (dsExtent() - lastTick > step*0.25) addTick(dsExtent()); // label the bottom of the axis (well TD)
     } else {
       // string zone: coarser ticks over the (usually much larger) shallow depth range
       const stringStep = dsNiceStep(split / (8*dsZoom));
@@ -6872,10 +7141,10 @@
       addTick(split);
       // BHA zone: finer ticks, since it now has much more room per meter — and finer still as
       // you zoom in further
-      const bhaSpan = dsState.totalDepth - split;
+      const bhaSpan = dsExtent() - split;
       const bhaStep = dsNiceStep(bhaSpan / (8*dsZoom));
-      for (let d=split+bhaStep; d<=dsState.totalDepth; d+=bhaStep) addTick(d);
-      if ((dsState.totalDepth-split) % bhaStep !== 0) addTick(dsState.totalDepth);
+      for (let d=split+bhaStep; d<=dsExtent(); d+=bhaStep) addTick(d);
+      if ((dsExtent()-split) % bhaStep !== 0) addTick(dsExtent());
     }
     const axis = document.createElementNS(svgNS,'line');
     axis.setAttribute('x1', DS_RULER_W); axis.setAttribute('x2', DS_RULER_W);
@@ -6923,6 +7192,19 @@
         dsManualSplitDepth = null;
         dsRender();
       });
+      // depth label sits above the drag area: click it to type the split depth
+      depthLabel.style.cursor = 'text'; depthLabel.style.textDecoration = 'underline';
+      depthLabel.setAttribute('pointer-events','all');
+      const tt = document.createElementNS(svgNS,'title'); tt.textContent = 'Click to type the split depth (m)'; depthLabel.appendChild(tt);
+      ['pointerdown','dblclick'].forEach(t=>depthLabel.addEventListener(t, e=>e.stopPropagation()));
+      depthLabel.addEventListener('click', e=>{
+        e.stopPropagation();
+        window.splitDepthEditor(depthLabel, dsRound1(split), v=>{
+          dsManualSplitDepth = (v==null || isNaN(v)) ? null : dsRound1(Math.max(1, Math.min(v, dsExtent()-1)));
+          dsRender();
+        });
+      });
+      breakG.appendChild(depthLabel);
       svg.appendChild(breakG);
     }
 
@@ -6944,9 +7226,13 @@
     // label boundary guide lines, matching Casing Design
     svg.appendChild(dsLabelBoundaryLines(svgNS));
 
-    dsState.components.slice().sort((a,b)=> (DS_TYPES[a.type]?.customIcon?1:0) - (DS_TYPES[b.type]?.customIcon?1:0)).forEach(c=>{
-      svg.appendChild(dsRenderComponent(svgNS, c));
-    });
+    // draw order: well features (Casing, Open Hole) -> pills -> drill string components (in front of the pills) -> pill labels / click targets
+    const dsSortedComps = dsState.components.slice().sort((a,b)=> (DS_TYPES[a.type]?.customIcon?1:0) - (DS_TYPES[b.type]?.customIcon?1:0));
+    dsSortedComps.filter(c=>DS_TYPES[c.type]?.wellFeature).forEach(c=>{ svg.appendChild(dsRenderComponent(svgNS, c)); });
+    const dsPillsLayer = dsRenderPillsDrawing(svgNS);
+    svg.appendChild(dsPillsLayer);
+    dsSortedComps.filter(c=>!DS_TYPES[c.type]?.wellFeature).forEach(c=>{ svg.appendChild(dsRenderComponent(svgNS, c)); });
+    svg.appendChild(dsPillsLayer.overLayer);
 
     // horizontal line + BSR label at every component connection point, drawn on top so it's
     // always visible over the components themselves
@@ -6956,15 +7242,50 @@
     host.innerHTML='';
     host.appendChild(svg);
     dsResolveLabelOverlaps(svg);
+    // pill labels (text, leader line, anchor dot) take their pill's colour
+    svg.querySelectorAll('.label-group[data-pill-color]').forEach(lg=>{
+      const col = lg.dataset.pillColor;
+      lg.querySelectorAll('text').forEach(t=>{ t.style.fill = col; });
+      lg.querySelectorAll('line').forEach(l=>{ l.setAttribute('stroke', col); });
+      lg.querySelectorAll('.leader-anchor-dot').forEach(d=>{ d.setAttribute('fill', col); });
+    });
     dsApplyZoom();
 
     dsAttachInteractions(svg);
-    dsRenderInspector();
+    // typing in an Inspector field re-draws the diagram only — rebuilding the Inspector would
+    // drop focus after every keystroke (one symbol at a time)
+    if (!(opts && opts.skipInspector)) dsRenderInspector();
     dsUpdateWarningBanner();
   }
 
+  // drag a pill label exactly like a component label: free movement, snapping out of the zone between the label boundaries
+  function dsPillLabelDrag(e, el){
+    const pl = dsState.pills.find(x=>x.id===parseInt(el.dataset.id));
+    if (!pl) return;
+    if (dsSelectedPillId!==pl.id || dsSelectedId!=null){ dsSelectedPillId = pl.id; dsSelectedId = null; dsRenderInspector(); }
+    const scaleX = 1/dsZoom;
+    const startClientX = e.clientX, startClientY = e.clientY;
+    const disp = el.dataset.part==='displaced';
+    const kx = disp ? 'dLabelDx' : 'labelDx', ky = disp ? 'dLabelDy' : 'labelDy';
+    const startDx = pl[kx]||0, startDy = pl[ky]||0;
+    const lgEl = el.closest('.label-group');
+    const baseX = lgEl ? parseFloat(lgEl.dataset.baseX) : null;
+    function onMove(ev){
+      pl[kx] = dsRound1(startDx + (ev.clientX-startClientX)*scaleX);
+      pl[ky] = dsRound1(startDy + (ev.clientY-startClientY)*scaleX);
+      if (baseX!=null){
+        const lx = baseX + pl[kx], rightB = dsRightLabelX(), leftB = dsLeftLabelX();
+        if (lx > DS_CENTER_X && lx < rightB) pl[kx] = dsRound1(rightB - baseX);
+        else if (lx <= DS_CENTER_X && lx > leftB) pl[kx] = dsRound1(leftB - baseX);
+      }
+      dsRender({skipInspector:true});
+    }
+    function onUp(){ window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
   function dsAttachInteractions(svg){
-    svg.addEventListener('click', ()=>{ dsSelectedId=null; dsRender(); });
+    svg.addEventListener('click', ()=>{ dsSelectedId=null; dsSelectedPillId=null; dsRender(); });
     svg.querySelectorAll('.comp-group').forEach(g=>{
       g.addEventListener('click', e=> e.stopPropagation());
     });
@@ -6975,7 +7296,7 @@
         const rect = svg.getBoundingClientRect();
         function onMove(ev){
           const md = dsYToMd((ev.clientY-rect.top)/dsZoom);
-          dsManualSplitDepth = dsRound1(Math.max(1, Math.min(md, dsState.totalDepth-1)));
+          dsManualSplitDepth = dsRound1(Math.max(1, Math.min(md, dsExtent()-1)));
           dsRender();
         }
         function onUp(){
@@ -6992,7 +7313,8 @@
         e.stopPropagation(); e.preventDefault();
         const role = el.dataset.role;
         const id = parseInt(el.dataset.id);
-        dsSelectedId = id;
+        if (role==='pilllabel'){ dsPillLabelDrag(e, el); return; }
+        dsSelectedId = id; dsSelectedPillId = null;
         const comp = dsState.components.find(c=>c.id===id);
         if (!comp) return;
         dsRenderInspector();
@@ -7007,6 +7329,7 @@
         // neighbor limits: the nearest other interval component above and below (by current
         // position), so this one can never be dragged/resized to overlap them
         const { minTop: neighborMinTop, maxBot: neighborMaxBot } = dsNeighborLimits(comp);
+        dsExtentLock = dsExtent();
         function onMove(ev){
           if (role==='label'){
             comp.labelDx = dsRound1(startLabelDx + (ev.clientX-startClientX)*scaleX);
@@ -7027,20 +7350,23 @@
             let nt = startTop+dMd, nb = startBot+dMd;
             const span = startBot-startTop;
             if (nt<0){ nt=0; nb=span; }
-            if (nb>dsState.totalDepth){ nb=dsState.totalDepth; nt=nb-span; }
+            if (nb>dsExtent()){ nb=dsExtent(); nt=nb-span; }
             if (nt<neighborMinTop){ nt=neighborMinTop; nb=nt+span; }
             if (nb>neighborMaxBot){ nb=neighborMaxBot; nt=nb-span; }
             comp.top = dsRound1(nt); comp.bot = dsRound1(nb);
           } else if (role==='top'){
             comp.top = dsRound1(Math.max(0, neighborMinTop, Math.min(startTop+dMd, comp.bot-1)));
           } else if (role==='bot'){
-            comp.bot = dsRound1(Math.min(dsState.totalDepth, neighborMaxBot, Math.max(startBot+dMd, comp.top+1)));
+            const isWF = !!DS_TYPES[comp.type]?.wellFeature;
+            comp.bot = dsRound1(Math.min(dsExtent(), isWF ? neighborMaxBot : DS_MAX_MD, Math.max(startBot+dMd, comp.top+1)));
+            if (!isWF) dsRestackComponents(); // components below follow the new length
           }
           dsRender();
         }
         function onUp(){
           window.removeEventListener('pointermove', onMove);
           window.removeEventListener('pointerup', onUp);
+          if (dsExtentLock != null){ dsExtentLock = null; dsRender(); }
         }
         window.addEventListener('pointermove', onMove);
         window.addEventListener('pointerup', onUp);
@@ -7111,27 +7437,27 @@
         return dsFmtTensile(mop);
       })()}" disabled title="Allowable tension (Safety Factor x Tensile Strength) minus the current hanging weight at this pipe's depth — how much extra pull is available before reaching the safe limit"></div>
 
+      ${dsCapacityInspectorField(comp)}
       <div class="insp-actions">
         <button id="ds_f_resetLabel">Reset Label Pos.</button>
         <button class="danger-btn" id="ds_f_delete">Delete</button>
       </div>
     `;
     const bind = (id,evt,fn)=>{ const e2=document.getElementById(id); if (e2) e2.addEventListener(evt, fn); };
-    bind('ds_f_label','input', e=>{ comp.label = e.target.value; dsRender(); });
+    bind('ds_f_label','input', e=>{ comp.label = e.target.value; dsRender({skipInspector:true}); });
     bind('ds_f_top','change', e=>{
       const { minTop, maxBot } = dsNeighborLimits(comp);
       comp.top = dsRound1(Math.max(minTop, Math.min(parseFloat(e.target.value)||0, comp.bot-0.5)));
       dsRestackComponents(); dsRender();
     });
     bind('ds_f_bot','change', e=>{
-      const { minTop, maxBot } = dsNeighborLimits(comp);
-      comp.bot = dsRound1(Math.min(maxBot, Math.max(parseFloat(e.target.value)||comp.top+1, comp.top+0.5)));
+      // components below follow: lengthening/shortening this one pushes them down/up (restack)
+      comp.bot = dsRound1(Math.min(DS_MAX_MD, Math.max(parseFloat(e.target.value)||comp.top+1, comp.top+0.5)));
       dsRestackComponents(); dsRender();
     });
     bind('ds_f_len','change', e=>{
       const newLen = Math.max(0.5, parseFloat(e.target.value)||1);
-      const { maxBot } = dsNeighborLimits(comp);
-      comp.bot = dsRound1(Math.min(maxBot, comp.top+newLen));
+      comp.bot = dsRound1(Math.min(DS_MAX_MD, comp.top+newLen));
       dsRestackComponents(); dsRender();
     });
     bind('ds_f_od','change', e=>{
@@ -7232,27 +7558,26 @@
         </div>
       </div>
 
+      ${dsCapacityInspectorField(comp)}
       <div class="insp-actions">
         <button id="ds_f_resetLabel">Reset Label Pos.</button>
         <button class="danger-btn" id="ds_f_delete">Delete</button>
       </div>
     `;
     const bind = (id,evt,fn)=>{ const e2=document.getElementById(id); if (e2) e2.addEventListener(evt, fn); };
-    bind('ds_f_label','input', e=>{ comp.label = e.target.value; dsRender(); });
+    bind('ds_f_label','input', e=>{ comp.label = e.target.value; dsRender({skipInspector:true}); });
     bind('ds_f_top','change', e=>{
       const { minTop, maxBot } = dsNeighborLimits(comp);
       comp.top = dsRound1(Math.max(minTop, Math.min(parseFloat(e.target.value)||0, comp.bot-0.1)));
       dsRestackComponents(); dsRender();
     });
     bind('ds_f_bot','change', e=>{
-      const { minTop, maxBot } = dsNeighborLimits(comp);
-      comp.bot = dsRound1(Math.min(maxBot, Math.max(parseFloat(e.target.value)||comp.top+0.1, comp.top+0.1)));
+      comp.bot = dsRound1(Math.min(DS_MAX_MD, Math.max(parseFloat(e.target.value)||comp.top+0.1, comp.top+0.1)));
       dsRestackComponents(); dsRender();
     });
     bind('ds_f_len','change', e=>{
       const newLen = Math.max(0.1, parseFloat(e.target.value)||1);
-      const { maxBot } = dsNeighborLimits(comp);
-      comp.bot = dsRound1(Math.min(maxBot, comp.top+newLen));
+      comp.bot = dsRound1(Math.min(DS_MAX_MD, comp.top+newLen));
       dsRestackComponents(); dsRender();
     });
     bind('ds_f_xograde','change', e=>{
@@ -7265,7 +7590,7 @@
       }
       dsRender();
     });
-    bind('ds_f_xograde_custom','input', e=>{ comp.grade = e.target.value; dsRender(); });
+    bind('ds_f_xograde_custom','input', e=>{ comp.grade = e.target.value; dsRender({skipInspector:true}); });
     bind('ds_f_xotensileunit','change', e=>{ dsTensileUnit = e.target.value; dsRenderInspector(); });
     bind('ds_f_resetLabel','click', ()=>{ comp.labelDx=0; comp.labelDy=0; dsRender(); });
     bind('ds_f_delete','click', ()=>{
@@ -7274,9 +7599,83 @@
       dsRestackComponents(); dsRender(); dsRenderTableView();
     });
   }
+  // read-only information for the pill selected on the drawing
+  function dsRenderPillInspector(el){
+    const pl = dsState.pills.find(x=>x.id===dsSelectedPillId);
+    const idx = dsState.pills.indexOf(pl);
+    const allPp = dsPillPlacements().placements.filter(x=>x.pill.id===pl.id);
+    const pp = allPp.find(x=>!x.displaced) || allPp[0];
+    const dp = allPp.find(x=>x.displaced);
+    const unitLabel = dsUomVolumeUnit==='m3' ? 'm\u00b3' : 'bbl';
+    const vol = pl.volume!=null ? (dsUomVolumeUnit==='m3' ? pl.volume*DS_BBL_TO_M3 : pl.volume) : null;
+    const volM3 = pl.volume!=null ? pl.volume*DS_BBL_TO_M3 : null;
+    const loc = pl.location==='annular' ? 'Annular' : 'Internal';
+    const col = dsPillColor(pl, idx);
+    const f = (v,d)=> v==null || isNaN(v) ? '\u2014' : (Math.round(v*Math.pow(10,d))/Math.pow(10,d)).toString();
+    const ro = (label,val)=>`<div class="insp-field"><label>${label}</label><input type="text" value="${escAttr(val)}" disabled></div>`;
+    let pTop = null, pBot = null;
+    if (pp){
+      // hydrostatic pressure of the column the pill sits in, at the pill's top and bottom
+      const calc = (D)=>{ const b = dsPillBalance(D); return pp.loc==='annular' ? b.pAnn : b.pInt; };
+      pTop = calc(pp.top); pBot = calc(pp.bot);
+    }
+    const grad = pl.density!=null ? pl.density*DS_BAR_PER_SGM : null;
+    el.className = '';
+    const vShown = vol!=null ? Math.round(vol*100)/100 : '';
+    el.innerHTML = `
+      <div class="insp-field"><label>Pill <span style="display:inline-block;width:10px;height:10px;background:${col};border-radius:2px;vertical-align:middle;margin-left:6px;"></span></label><input type="text" id="ds_pill_name" value="${escAttr(pl.name||'')}"></div>
+      <div class="insp-row">
+        <div class="insp-field"><label>Location</label><select id="ds_pill_loc"><option value="internal"${loc==='Internal'?' selected':''}>Internal</option><option value="annular"${loc==='Annular'?' selected':''}>Annular</option></select></div>
+        ${ro('Pumping sequence', `${idx+1} of ${dsState.pills.length}`)}
+      </div>
+      ${dp ? `<div class="insp-row">
+        <div class="insp-field"><label>Pill color</label><input type="color" id="ds_pill_color" value="${col}" style="width:100%;height:32px;padding:2px;"></div>
+        <div class="insp-field"><label>Displaced color</label><input type="color" id="ds_pill_dcolor" value="${dsPillDispColor(pl, idx)}" style="width:100%;height:32px;padding:2px;"></div>
+      </div>` : `<div class="insp-field"><label>Color</label><input type="color" id="ds_pill_color" value="${col}" style="width:100%;height:32px;padding:2px;"></div>`}
+      <div class="insp-row">
+        <div class="insp-field"><label>Volume (${unitLabel})</label><input type="number" id="ds_pill_vol" value="${vShown}" step="0.1" min="0"></div>
+        <div class="insp-field"><label>Density (sg)</label><input type="number" id="ds_pill_den" value="${pl.density!=null?pl.density:''}" step="0.01" min="0"></div>
+      </div>
+      <div class="insp-row">${ro('Mass (t)', f(volM3!=null && pl.density!=null ? volM3*pl.density : null,2))}${ro('Pump from', dsState.pillMode==='top'?'Top':'Bottom')}</div>
+      <div class="insp-row">${ro('Top MD (m)', pp ? f(pp.top,1) : '\u2014')}${ro('Bottom MD (m)', pp ? f(pp.bot,1) : '\u2014')}</div>
+      ${ro(pp && pp.loc==='annular' ? 'Height in annulus (m)' : 'Length in string (m)', pp ? f(pp.len,1) + (pp.full ? (pp.loc==='annular'?' (annulus full)':' (string full)') : '') : '\u2014')}
+      ${dp ? ro('Displaced to annulus', `${f(dsUomVolumeUnit==='m3' ? dp.vol*DS_BBL_TO_M3 : dp.vol,2)} ${unitLabel} \u00b7 ${f(dp.top,1)}\u2013${f(dp.bot,1)} m (${f(dp.len,1)} m)`) : ''}
+      <div class="insp-row">${ro('Gradient (bar/m)', f(grad,4))}${ro('Gradient (psi/ft)', f(grad!=null ? grad*DS_PSI_PER_FT_PER_BARM : null,3))}</div>
+      <div class="insp-row">${ro('P at top (bar)', f(pTop,2))}${ro('P at bottom (bar)', f(pBot,2))}</div>
+      <div class="insp-actions" style="flex-wrap:wrap;">
+        <button id="ds_pill_up" class="ghost" ${idx===0?'disabled':''}>&uarr; Pump earlier</button>
+        <button id="ds_pill_down" class="ghost" ${idx===dsState.pills.length-1?'disabled':''}>&darr; Pump later</button>
+      </div>
+      <div class="insp-actions">
+        <button id="ds_pill_resetlbl" class="ghost">Reset Label Pos.</button>
+        <button id="ds_pill_delete" class="danger-btn">Delete</button>
+      </div>`;
+    const redraw = (full)=>{ dsRender(full ? undefined : {skipInspector:true}); };
+    document.getElementById('ds_pill_name').addEventListener('input', e=>{ pl.name = e.target.value; redraw(false); });
+    document.getElementById('ds_pill_name').addEventListener('change', ()=>redraw(true));
+    document.getElementById('ds_pill_color').addEventListener('input', e=>{ pl.color = e.target.value; redraw(false); });
+    const dcEl = document.getElementById('ds_pill_dcolor');
+    if (dcEl) dcEl.addEventListener('input', e=>{ pl.dColor = e.target.value; redraw(false); });
+    document.getElementById('ds_pill_loc').addEventListener('change', e=>{ pl.location = e.target.value; redraw(true); });
+    document.getElementById('ds_pill_vol').addEventListener('input', e=>{
+      const v = e.target.value; pl.volume = v==='' ? null : (dsUomVolumeUnit==='m3' ? (parseFloat(v)||0)/DS_BBL_TO_M3 : (parseFloat(v)||0)); redraw(false);
+    });
+    document.getElementById('ds_pill_vol').addEventListener('change', ()=>redraw(true));
+    document.getElementById('ds_pill_den').addEventListener('input', e=>{ const v = e.target.value; pl.density = v==='' ? null : (parseFloat(v)||0); redraw(false); });
+    document.getElementById('ds_pill_den').addEventListener('change', ()=>redraw(true));
+    const move = (d)=>{ const i = dsState.pills.indexOf(pl), j = i+d; if (j<0||j>=dsState.pills.length) return; dsState.pills.splice(i,1); dsState.pills.splice(j,0,pl); redraw(true); };
+    document.getElementById('ds_pill_up').addEventListener('click', ()=>move(-1));
+    document.getElementById('ds_pill_down').addEventListener('click', ()=>move(1));
+    document.getElementById('ds_pill_resetlbl').addEventListener('click', ()=>{ pl.labelDx = 0; pl.labelDy = 0; pl.dLabelDx = 0; pl.dLabelDy = 0; redraw(false); });
+    document.getElementById('ds_pill_delete').addEventListener('click', ()=>{ dsState.pills = dsState.pills.filter(x=>x.id!==pl.id); dsSelectedPillId = null; redraw(true); });
+  }
   function dsRenderInspector(){
     const el = document.getElementById('dsInspectorContent');
     const comp = dsState.components.find(c=>c.id===dsSelectedId);
+    if (!comp && dsSelectedPillId!=null && dsState.pills.some(x=>x.id===dsSelectedPillId)){
+      dsRenderPillInspector(el);
+      return;
+    }
     if (!comp){
       el.className = 'empty-inspector';
       el.innerHTML = 'Drag a drill string component from the left onto the diagram to add it. Click any component to edit its depth, size, and details here.';
@@ -7321,7 +7720,7 @@
       ${isPoint ? `<div class="insp-field"><label>Color</label><input type="color" id="ds_f_color" value="${comp.color}"></div>` : ''}
       ${(!isPoint && comp.type!=='openhole') ? `
       <div class="insp-row">
-        <div class="insp-field"><label>Wt (ppf)</label><input type="text" id="ds_f_weight" value="${comp.type==='crossover'?dsCrossoverWeight(comp):comp.type==='stabilizer'?dsStabilizerWeight(comp):(comp.weight||'')}" ${['drillcollar','jar','mwd','accelerator','circsub','floatvalve','crossover','stabilizer'].includes(comp.type)?'disabled title="Calculated from body OD/ID: 10.69 x t x (OD-t)"':''}></div>
+        <div class="insp-field"><label>Wt (${dsWeightColUnit==='kgm'?'kg/m':'ppf'})</label><input type="text" id="ds_f_weight" value="${dsFmtWeight(comp.type==='crossover'?dsCrossoverWeight(comp):comp.type==='stabilizer'?dsStabilizerWeight(comp):(comp.weight||''), comp.weightAdjKgm)}" ${['drillcollar','jar','mwd','accelerator','circsub','floatvalve','crossover','stabilizer'].includes(comp.type)?'disabled title="Calculated from body OD/ID: 10.69 x t x (OD-t)"':''}></div>
         <div class="insp-field"><label>TJ OD (in)</label><input type="number" id="ds_f_tjod" value="${comp.tjOd||''}" step="0.125" placeholder="auto" ${(comp.topThreads && API_SPEC7_TJ[comp.topThreads]) ? 'disabled title="Set by the selected Top Threads"' : ''}></div>
         <div class="insp-field"><label>TJ ID (in)</label><input type="number" id="ds_f_tjid_readout" value="${(comp.topThreads && API_SPEC7_TJ[comp.topThreads]) ? API_SPEC7_TJ[comp.topThreads].id : (comp.innerDiameter||'')}" disabled title="Set by the selected Top Threads"></div>
       </div>
@@ -7385,32 +7784,36 @@
       </div>` : ''}
       <div class="insp-field"><label>Color</label><input type="color" id="ds_f_color" value="${comp.color}"></div>
       ` : ''}
+      ${dsCapacityInspectorField(comp)}
       <div class="insp-actions">
         <button id="ds_f_resetLabel">Reset Label Pos.</button>
         <button class="danger-btn" id="ds_f_delete">Delete</button>
       </div>
     `;
     const bind = (id,evt,fn)=>{ const e=document.getElementById(id); if (e) e.addEventListener(evt, fn); };
-    bind('ds_f_label','input', e=>{ comp.label=e.target.value; dsRender(); });
+    bind('ds_f_label','input', e=>{ comp.label=e.target.value; dsRender({skipInspector:true}); });
     bind('ds_f_top','change', e=>{
       const val = parseFloat(e.target.value)||0;
-      if (isPoint){ const { minTop, maxBot } = dsNeighborLimits(comp); comp.top = dsRound1(Math.max(0, minTop, Math.min(val, dsState.totalDepth, maxBot))); comp.bot = comp.top; }
+      if (isPoint){ const { minTop, maxBot } = dsNeighborLimits(comp); comp.top = dsRound1(Math.max(0, minTop, Math.min(val, DS_MAX_MD, maxBot))); comp.bot = comp.top; }
       else if (isCrossover){
         const fixedLen = comp.bot - comp.top;
         const { minTop, maxBot } = dsNeighborLimits(comp);
-        const newTop = dsRound1(Math.max(0, minTop, Math.min(val, maxBot-fixedLen, dsState.totalDepth-fixedLen)));
+        const newTop = dsRound1(Math.max(0, minTop, Math.min(val, maxBot-fixedLen, DS_MAX_MD-fixedLen)));
         comp.top = newTop; comp.bot = dsRound1(newTop+fixedLen);
       }
       else { const { minTop } = dsNeighborLimits(comp); comp.top = dsRound1(Math.max(0, minTop, Math.min(val, comp.bot-0.5))); }
       dsRender();
     });
     bind('ds_f_len','change', e=>{
+      const isWF = !!DS_TYPES[comp.type]?.wellFeature;
       const { maxBot } = dsNeighborLimits(comp);
       const newLen = Math.max(0.1, parseFloat(e.target.value)||1);
-      comp.bot = dsRound1(Math.min(dsState.totalDepth, maxBot, comp.top+newLen));
+      // drill string components push the ones below them down/up; Well Features stay independent
+      comp.bot = dsRound1(Math.min(DS_MAX_MD, isWF ? maxBot : DS_MAX_MD, comp.top+newLen));
+      if (!isWF) dsRestackComponents();
       dsRender();
     });
-    bind('ds_f_bot','change', e=>{ if(!isPoint){ const { maxBot } = dsNeighborLimits(comp); comp.bot = dsRound1(Math.min(dsState.totalDepth, maxBot, Math.max(comp.top+0.5, parseFloat(e.target.value)||0))); } dsRender(); });
+    bind('ds_f_bot','change', e=>{ if(!isPoint){ const isWF = !!DS_TYPES[comp.type]?.wellFeature; const { maxBot } = dsNeighborLimits(comp); comp.bot = dsRound1(Math.min(DS_MAX_MD, isWF ? maxBot : DS_MAX_MD, Math.max(comp.top+0.5, parseFloat(e.target.value)||0))); if (!isWF) dsRestackComponents(); } dsRender(); });
     bind('ds_f_od','change', e=>{
       comp.od=Math.max(0.5, parseFloat(e.target.value)||comp.od);
       if (['drillcollar','jar','mwd','accelerator','circsub','floatvalve'].includes(comp.type)){ comp.tjOd = comp.od; comp.weight = dsCollarWeight(comp.od, comp.innerDiameter); }
@@ -7429,7 +7832,12 @@
       dsRender();
     });
     bind('ds_f_bodyod','change', e=>{ comp.bodyOd=Math.max(0.5, Math.min(parseFloat(e.target.value)||comp.bodyOd, comp.od-0.1)); dsRender(); });
-    bind('ds_f_weight','input', e=>{ comp.weight=e.target.value; dsRender(); });
+    bind('ds_f_weight','input', e=>{
+      // the field shows the unit chosen in UoM > Linear Weight; the stored value is always ppf
+      const num = parseFloat(e.target.value);
+      comp.weight = (!isNaN(num) && dsWeightColUnit==='kgm') ? dsRound1(num/DS_PPF_TO_KGM) : e.target.value;
+      dsRender({skipInspector:true});
+    });
     bind('ds_f_tjod','change', e=>{ comp.tjOd = e.target.value ? Math.max(comp.od, parseFloat(e.target.value)) : null; dsRender(); });
     bind('ds_f_collarsize','change', e=>{
       const s = API_SPEC7_COLLAR_SIZES[parseInt(e.target.value)];
@@ -7453,11 +7861,11 @@
       }
       dsRender();
     });
-    bind('ds_f_grade_custom','input', e=>{ comp.grade = e.target.value; dsRender(); });
+    bind('ds_f_grade_custom','input', e=>{ comp.grade = e.target.value; dsRender({skipInspector:true}); });
     bind('ds_f_tensileunit','change', e=>{ dsTensileUnit = e.target.value; dsRenderInspector(); });
     bind('ds_f_collarsaboveunit','change', e=>{ dsCollarsAboveUnit = e.target.value; dsRenderInspector(); });
-    bind('ds_f_threadstext','input', e=>{ comp.threadsText = e.target.value; dsRender(); });
-    bind('ds_f_color','input', e=>{ comp.color=e.target.value; dsRender(); });
+    bind('ds_f_threadstext','input', e=>{ comp.threadsText = e.target.value; dsRender({skipInspector:true}); });
+    bind('ds_f_color','input', e=>{ comp.color=e.target.value; dsRender({skipInspector:true}); });
     bind('ds_f_resetLabel','click', ()=>{ comp.labelDx=0; comp.labelDy=0; dsRender(); });
     bind('ds_f_delete','click', ()=>{ dsState.components = dsState.components.filter(c=>c.id!==comp.id); dsSelectedId=null; dsRender(); });
   }
@@ -7497,7 +7905,13 @@
     const rect = dsWrap.getBoundingClientRect();
     const svg = document.getElementById('dsSvgHost').querySelector('svg');
     const y = (e.clientY - rect.top - dsPanY)/dsZoom;
-    dsAddComponent(type, dsYToMd(y));
+    if (!DS_TYPES[type].wellFeature && dsStringBottom() != null){
+      dsAddComponent(type, null, true);
+      dsRestackComponents();
+      dsRender();
+    } else {
+      dsAddComponent(type, dsYToMd(y));
+    }
   });
   dsWrap.addEventListener('wheel', e=>{
     e.preventDefault();
@@ -7541,6 +7955,13 @@
   // A crossover's own threads are always derived from whatever's adjacent to it, so it can
   // never itself be mismatched — the real issue is two non-crossover components touching
   // directly with different thread types and no crossover sub between them
+  // NC connections are one thread form sold under several names: "NC50 (IF)", "NC50 (XH)" and
+  // plain "NC50" are the same interchangeable connection, so they must not trigger a mismatch
+  function dsThreadKey(name){
+    const t = String(name||'').trim();
+    const m = t.match(/^(NC\s*\d+)\s*\((IF|XH)\)$/i);
+    return (m ? m[1] : t).replace(/\s+/g,'').toUpperCase();
+  }
   function dsComputeThreadWarnings(){
     const warnings = [];
     dsState.components.forEach(above=>{
@@ -7549,7 +7970,7 @@
         if (DS_TYPES[below.type]?.point || below.type==='crossover') return;
         if (Math.abs(above.bot - below.top) > 0.05) return;
         const aConn = above.bottomThreads, bConn = below.topThreads;
-        if (aConn && bConn && aConn !== bConn){
+        if (aConn && bConn && dsThreadKey(aConn) !== dsThreadKey(bConn)){
           warnings.push({
             ids: [above.id, below.id], depth: above.bot,
             message: `${above.label} (${aConn} Pin) meets ${below.label} (${bConn} Box) at ${dsRound1(above.bot)} m \u2014 mismatched threads, consider adding a crossover`
@@ -7614,11 +8035,8 @@
       c.bot = dsRound1(cursor+len);
       cursor = c.bot;
     });
-    // Total Depth follows the stack: it's the first component's top plus the sum of every
-    // component's length, i.e. wherever the deepest component now ends
-    dsState.totalDepth = dsRound1(cursor);
-    const totalDepthInput = document.getElementById('dsTotalDepth');
-    if (totalDepthInput) totalDepthInput.value = dsState.totalDepth;
+    // Total Depth is only a description of the design — it no longer follows the stack. The
+    // drawing's depth range comes from the components themselves (see dsExtent).
   }
   // Reconstructs the same "size/spec" line shown as the second line of each component's
   // diagram label — used as both the BoM's Label and its grouping key, so identical items
@@ -7735,7 +8153,7 @@
   function dsComputeVolumeIntervals(){
     const dsComps = dsState.components.filter(c=> !DS_TYPES[c.type]?.wellFeature && !DS_TYPES[c.type]?.point);
     const wellFeatures = dsState.components.filter(c=> DS_TYPES[c.type]?.wellFeature);
-    const breakpoints = new Set([0, dsState.totalDepth]);
+    const breakpoints = new Set([0, dsDeepest()]);
     dsComps.forEach(c=>{ breakpoints.add(dsRound1(c.top)); breakpoints.add(dsRound1(c.bot)); });
     wellFeatures.forEach(c=>{ breakpoints.add(dsRound1(c.top)); breakpoints.add(dsRound1(c.bot)); });
     const sorted = [...breakpoints].sort((a,b)=>a-b);
@@ -7761,37 +8179,444 @@
     if (bblVal==null) return '\u2014';
     return dsUomVolumeUnit==='m3' ? (bblVal*DS_BBL_TO_M3).toFixed(2) : bblVal.toFixed(2);
   }
-  function dsRenderVolumes(){
-    const tbody = document.getElementById('dsVolumesTbody');
-    const unitLabel = dsUomVolumeUnit==='m3' ? 'm\u00b3' : 'bbl';
-    document.getElementById('dsVolInternalHeader').textContent = `Internal Vol (${unitLabel})`;
-    document.getElementById('dsVolAnnularHeader').textContent = `Annular Vol (${unitLabel})`;
+  // capacity is always shown in litres per metre (L/m), independent of the bbl / m3 volume unit
+  function dsCapPerM(bblPerFt){
+    if (bblPerFt==null || isNaN(bblPerFt)) return null;
+    return bblPerFt * DS_M_TO_FT * DS_BBL_TO_M3 * 1000;
+  }
+  function dsFmtCap(bblPerFt){
+    const v = dsCapPerM(bblPerFt);
+    return v==null ? '\u2014' : v.toFixed(2);
+  }
+  // capacity (bbl/ft) of one component: drill string parts use their own ID, Open Hole its hole
+  // size, Casing its ID. null when there is nothing meaningful to show (bit, point-style tools)
+  function dsComponentCapacityPerFt(comp){
+    const def = DS_TYPES[comp.type] || {};
+    if (comp.type==='openhole') return comp.od!=null ? Math.pow(comp.od,2)/DS_BBL_PER_FT_CONST : null;
+    if (comp.type==='casing') return comp.innerDiameter!=null ? Math.pow(comp.innerDiameter,2)/DS_BBL_PER_FT_CONST : null;
+    if (comp.type==='bit' || def.point) return null;
+    const cap = dsComponentCapacityFactors(comp);
+    return cap ? cap.intCapPerFt : null;
+  }
+  function dsCapacityInspectorField(comp){
+    const cap = dsComponentCapacityPerFt(comp);
+    if (cap==null) return '';
+    const u = 'L/m';
+    return `<div class="insp-field"><label>Capacity (${u})</label><input type="text" value="${dsFmtCap(cap)}" disabled title="Internal capacity per metre${comp.type==='openhole'?' (hole size)':''}"></div>`;
+  }
+
+  /* ---------------- Pills (Volumes window) ---------------- */
+  let dsNextPillId = 1;
+  // Length a pill of the given volume (bbl) occupies if it sits at the bottom of the drill string
+  // (counted upward through each component's internal capacity), and the height it would reach
+  // in the annulus if it were displaced out of the string and fills the annulus from the bottom up
+  function dsPillLengths(volBbl, intervals, strComps, fromTop){
+    let remaining = volBbl, inString = 0;
+    strComps.slice().sort((a,b)=> fromTop ? a.top-b.top : b.bot-a.bot).forEach(c=>{
+      if (remaining <= 0) return;
+      const capFt = dsComponentCapacityPerFt(c);
+      if (capFt==null || capFt<=0) return;
+      const lenFt = (c.bot-c.top)*DS_M_TO_FT;
+      const compVol = capFt*lenFt;
+      if (remaining >= compVol){ inString += (c.bot-c.top); remaining -= compVol; }
+      else { inString += (remaining/capFt)/DS_M_TO_FT; remaining = 0; }
+    });
+    let left = volBbl, inAnnulus = 0;
+    intervals.slice().sort((a,b)=> fromTop ? a.top-b.top : b.bot-a.bot).forEach(iv=>{
+      if (left <= 0) return;
+      let vol = iv.annularVol;
+      if (vol==null && !iv.dsComp && iv.wellFeat){
+        const capFt = dsComponentCapacityPerFt(iv.wellFeat);
+        vol = capFt!=null ? capFt*iv.length*DS_M_TO_FT : null;
+      }
+      if (vol==null || vol<=0) return;
+      if (left >= vol){ inAnnulus += iv.length; left -= vol; }
+      else { inAnnulus += iv.length*(left/vol); left = 0; }
+    });
+    return { inString, inAnnulus, overflowString: remaining>0.0001, overflowAnnulus: left>0.0001 };
+  }
+  const DS_PILL_COLORS = ['#e4572e','#17bebb','#ffc914','#76b041','#a64ac9','#ef8354','#2e86ab','#d1495b'];
+  // a pill's own colour if the user picked one, otherwise the default palette entry for its position
+  function dsPillColor(pl, idx){ return pl.color || DS_PILL_COLORS[idx % DS_PILL_COLORS.length]; }
+  // the displaced-to-annulus part has its own colour (defaults to the pill's colour)
+  function dsPillDispColor(pl, idx){ return pl.dColor || dsPillColor(pl, idx); }
+  // numeric depth interval of every pill (pumping sequence = array order), for drawing
+  function dsPillPlacements(){
     const intervals = dsComputeVolumeIntervals();
-    if (!intervals.length){
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:20px;">No components yet.</td></tr>`;
-      return;
+    const strComps = dsState.components.filter(c=> !DS_TYPES[c.type]?.wellFeature && !DS_TYPES[c.type]?.point);
+    const fromTop = dsState.pillMode==='top';
+    let strBottom = null, annBottom = null, strTop = null, annTop = null;
+    strComps.forEach(c=>{ if (dsComponentCapacityPerFt(c)>0){ if (strBottom==null || c.bot>strBottom) strBottom = c.bot; if (strTop==null || c.top<strTop) strTop = c.top; } });
+    intervals.forEach(iv=>{ if (annBottom==null || iv.bot>annBottom) annBottom = iv.bot; if (annTop==null || iv.top<annTop) annTop = iv.top; });
+    // When the Internal pills together exceed what the drill string holds, the excess is pushed out
+    // of the bit into the annulus. It comes out of the bottom of the stack: the earliest pumped pill
+    // when pumping from Bottom, the last pumped pill when pumping from Top.
+    let strCapBbl = 0;
+    strComps.forEach(c=>{ const cf = dsComponentCapacityPerFt(c); if (cf>0) strCapBbl += cf*(c.bot-c.top)*DS_M_TO_FT; });
+    const internalPills = dsState.pills.filter(pl=> pl.location!=='annular' && pl.volume>0);
+    let excess = Math.max(0, internalPills.reduce((a,pl)=>a+pl.volume,0) - strCapBbl);
+    const displaced = {};
+    (fromTop ? internalPills.slice().reverse() : internalPills).forEach(pl=>{
+      const d = Math.min(excess, pl.volume); if (d>0){ displaced[pl.id] = d; excess -= d; }
+    });
+    const cum = { internal:0, annular:0, displaced:0 }, out = [];
+    const place = (pl, i, loc, vol, isDisplaced)=>{
+      // displaced volume leaves through the bit, so it always stacks up from the BOTTOM of the annulus (first out = deepest)
+      const ft = isDisplaced ? false : fromTop;
+      const ck = isDisplaced && fromTop ? 'displaced' : loc;
+      if (vol>0){
+        const r0 = dsPillLengths(cum[ck], intervals, strComps, ft), r1 = dsPillLengths(cum[ck]+vol, intervals, strComps, ft);
+        const a0 = loc==='internal' ? r0.inString : r0.inAnnulus, a1 = loc==='internal' ? r1.inString : r1.inAnnulus;
+        const full = loc==='internal' ? r1.overflowString : r1.overflowAnnulus;
+        const base = ft ? (loc==='internal' ? strTop : annTop) : (loc==='internal' ? strBottom : annBottom);
+        if (base!=null) out.push({ pill: pl, idx: i, loc, len: a1-a0, full, vol, displaced: !!isDisplaced,
+          top: ft ? base+a0 : base-a1, bot: ft ? base+a1 : base-a0 });
+      }
+      cum[ck] += vol;
+    };
+    dsState.pills.forEach((pl,i)=>{
+      const vol = pl.volume!=null ? pl.volume : 0;
+      if (pl.location==='annular'){ place(pl, i, 'annular', vol, false); return; }
+      const d = displaced[pl.id] || 0;
+      place(pl, i, 'internal', vol-d, false);
+      if (d>0 && !fromTop) place(pl, i, 'annular', d, true);
+    });
+    if (fromTop){
+      // pumping from Top: the last pumped pill is nearest the bit, so it leaves first and ends up deepest
+      dsState.pills.map((pl,i)=>[pl,i]).reverse().forEach(([pl,i])=>{ if (displaced[pl.id]>0) place(pl, i, 'annular', displaced[pl.id], true); });
     }
-    let totalInternal = 0, totalAnnular = 0;
-    tbody.innerHTML = intervals.map(iv=>{
-      if (iv.internalVol!=null) totalInternal += iv.internalVol;
-      if (iv.annularVol!=null) totalAnnular += iv.annularVol;
-      return `<tr>
-        <td>${iv.top}</td><td>${iv.bot}</td><td>${iv.length}</td>
-        <td>${iv.dsComp ? iv.dsComp.label : '\u2014'}</td>
-        <td>${iv.dsComp && iv.dsComp.innerDiameter!=null ? iv.dsComp.innerDiameter : '\u2014'}</td>
-        <td>${dsFmtVolume(iv.internalVol)}</td>
-        <td>${iv.wellFeat ? iv.wellFeat.label : '\u2014'}</td>
-        <td>${iv.dsComp ? iv.dsComp.od : '\u2014'}</td>
-        <td>${iv.wellboreId!=null ? iv.wellboreId : '\u2014'}</td>
-        <td>${dsFmtVolume(iv.annularVol)}</td>
+    return { placements: out, intervals, strComps };
+  }
+  // draws every pill as a coloured fill over the pipe bore (Internal) or the annulus (Annular)
+  function dsRenderPillsDrawing(svgNS){
+    const g = document.createElementNS(svgNS,'g');
+    g.setAttribute('class','ds-pills-layer');
+    g.style.pointerEvents = 'none';
+    // everything that must sit IN FRONT of the drill string (transparent click targets over the fills, and the labels)
+    const over = document.createElementNS(svgNS,'g');
+    over.setAttribute('class','ds-pills-top');
+    g.overLayer = over;
+    if (!dsState.pills.length) return g;
+    const { placements, intervals, strComps } = dsPillPlacements();
+    const S = DS_VISUAL_SCALE;
+    let curMinX = Infinity, curMaxX = -Infinity, curPillId = null;
+    const rect = (x,y,w,h,col)=>{
+      if (h<=0||w<=0) return;
+      curMinX = Math.min(curMinX, x); curMaxX = Math.max(curMaxX, x+w);
+      const r = document.createElementNS(svgNS,'rect');
+      r.setAttribute('x',x); r.setAttribute('y',y); r.setAttribute('width',w); r.setAttribute('height',h);
+      r.setAttribute('fill',col); r.setAttribute('fill-opacity','0.75'); r.setAttribute('stroke',col); r.setAttribute('stroke-width','0.8');
+      if (curPillId===dsSelectedPillId){ r.setAttribute('stroke','#ffffff'); r.setAttribute('stroke-width','2'); }
+      const pid = curPillId;
+      g.appendChild(r);
+      // invisible click target in front of the string, so a pill can be selected through the pipe bore
+      const t = document.createElementNS(svgNS,'rect');
+      ['x','y','width','height'].forEach(k=>t.setAttribute(k, r.getAttribute(k)));
+      t.setAttribute('fill','transparent'); t.style.pointerEvents = 'auto'; t.style.cursor = 'pointer';
+      t.addEventListener('pointerdown', e=>{ e.stopPropagation(); });
+      t.addEventListener('click', e=>{ e.stopPropagation(); dsSelectedPillId = pid; dsSelectedId = null; dsRender(); });
+      over.appendChild(t);
+    };
+    const labels = [];
+    placements.forEach(pp=>{
+      curMinX = Infinity; curMaxX = -Infinity; curPillId = pp.pill.id;
+      const col = pp.displaced ? dsPillDispColor(pp.pill, pp.idx) : dsPillColor(pp.pill, pp.idx);
+      if (pp.loc==='internal'){
+        strComps.forEach(c=>{
+          const t = Math.max(pp.top, c.top), b = Math.min(pp.bot, c.bot);
+          if (b<=t || !(dsComponentCapacityPerFt(c)>0)) return;
+          const id = c.innerDiameter!=null ? c.innerDiameter : (c.od||5)*0.85;
+          const hw = dsHalfW(id)*S;
+          rect(DS_CENTER_X-hw, dsMdToY(t), hw*2, dsMdToY(b)-dsMdToY(t), col);
+        });
+      } else {
+        intervals.forEach(iv=>{
+          const t = Math.max(pp.top, iv.top), b = Math.min(pp.bot, iv.bot);
+          if (b<=t || iv.wellboreId==null) return;
+          const outer = dsHalfW(iv.wellboreId)*S;
+          const inner = iv.dsComp ? dsHalfW(iv.dsComp.od||0)*S : 0;
+          if (outer<=inner) return;
+          const y = dsMdToY(t), h = dsMdToY(b)-dsMdToY(t);
+          rect(DS_CENTER_X-outer, y, outer-inner, h, col);
+          rect(DS_CENTER_X+inner, y, outer-inner, h, col);
+        });
+      }
+      if (curMinX!==Infinity) labels.push({ pp, col, yMid:(dsMdToY(pp.top)+dsMdToY(pp.bot))/2, minX: curMinX, maxX: curMaxX });
+    });
+    // pill labels behave like every other label: placed on the label boundary, draggable, kept
+    // from overlapping, with a leader line + anchor dot back to the pill
+    const unitLabel = dsUomVolumeUnit==='m3' ? 'm\u00b3' : 'bbl';
+    labels.forEach(L=>{
+      const pl = L.pp.pill;
+      const vol = pl.volume!=null ? (dsUomVolumeUnit==='m3' ? pl.volume*DS_BBL_TO_M3 : pl.volume) : null;
+      const pv = L.pp.vol!=null ? (dsUomVolumeUnit==='m3' ? L.pp.vol*DS_BBL_TO_M3 : L.pp.vol) : null;
+      const subs = [
+        `${L.pp.displaced?'Displaced to annulus':(L.pp.loc==='annular'?'Annular':'Internal')} \u00b7 ${pv!=null ? (Math.round(pv*100)/100) : '\u2014'} ${unitLabel}` + (pl.density!=null ? ` \u00b7 ${pl.density} sg` : ''),
+        `${dsRound1(L.pp.top)}\u2013${dsRound1(L.pp.bot)} m (${dsRound1(L.pp.bot-L.pp.top)} m)`
+      ];
+      // the displaced part has its own, independent label (own position + own drag offset: dLabelDx / dLabelDy)
+      const lblComp = L.pp.displaced ? { id: pl.id, labelDx: pl.dLabelDx||0, labelDy: pl.dLabelDy||0 } : pl;
+      dsAppendLabel(svgNS, over, lblComp, L.maxX, L.yMid, dsRightLabelX(), L.yMid+3, `${L.pp.idx+1}. ${pl.name||'Pill'}${L.pp.displaced?' (displaced)':''}`, subs);
+      const lg = over.lastElementChild;
+      lg.style.pointerEvents = 'auto';
+      lg.dataset.pillColor = L.col;
+      lg.addEventListener('click', e=>e.stopPropagation()); // clicking / dragging a pill label must not deselect the pill
+      lg.querySelectorAll('text').forEach(t=>{ t.style.fill = L.col; });
+      const hit = lg.querySelector('.label-hit');
+      if (hit){ hit.dataset.role = 'pilllabel'; hit.dataset.id = pl.id; if (L.pp.displaced) hit.dataset.part = 'displaced'; }
+    });
+    return g;
+  }
+  // Hydrostatic pressure (bar) at depth D of the well filled with mud, with the pills replacing mud
+  // over their depth intervals. Vertical well assumed (MD = TVD). P(bar) = 0.0981 x sg x m
+  const DS_BAR_PER_SGM = 0.0980665, DS_PSI_PER_BAR = 14.5038, DS_PSI_PER_FT_PER_BARM = 14.5038*0.3048; // bar/m -> psi/ft
+  function dsPillRefDepthAuto(){
+    let d = 0;
+    dsState.components.forEach(c=>{ if (!DS_TYPES[c.type]?.wellFeature && !DS_TYPES[c.type]?.point && c.bot>d) d = c.bot; });
+    return d;
+  }
+  let dsPillRefDepth = null; // null = auto (bottom of the drill string)
+  function dsPillBalance(Dover){
+    const D = Dover!=null ? Dover : (dsPillRefDepth!=null ? dsPillRefDepth : dsPillRefDepthAuto());
+    const rhoM = dsMud.density;
+    const { placements } = dsPillPlacements();
+    const col = (loc)=>{
+      let p = rhoM*D;
+      placements.forEach(pp=>{
+        if (pp.loc!==loc || pp.pill.density==null) return;
+        const ov = Math.max(0, Math.min(pp.bot, D) - Math.min(pp.top, D));
+        p += (pp.pill.density - rhoM) * ov;
+      });
+      return p*DS_BAR_PER_SGM;
+    };
+    const pInt = col('internal'), pAnn = col('annular');
+    return { D, rhoM, pInt, pAnn, diff: pAnn - pInt, gInt: D>0 ? pInt/D : 0, gAnn: D>0 ? pAnn/D : 0 };
+  }
+  function dsPillBalanceHtml(){
+    const b = dsPillBalance();
+    const f = v=>v.toFixed(2);
+    const psi = v=>(v*DS_PSI_PER_BAR).toFixed(0);
+    const g3 = v=>v.toFixed(4), g4 = v=>v.toFixed(3);
+    const fluidRow = (name, loc, rho)=>`<tr><td>${escAttr(name)}</td><td>${loc}</td><td>${rho}</td><td>${(rho*DS_BAR_PER_SGM).toFixed(4)}</td><td>${(rho*DS_BAR_PER_SGM*DS_PSI_PER_FT_PER_BARM).toFixed(3)}</td></tr>`;
+    const fluids = fluidRow('Drilling mud','Both',b.rhoM) + dsState.pills.filter(pl=>pl.density!=null).map(pl=>fluidRow(pl.name||'Pill', pl.location==='annular'?'Annular':'Internal', pl.density)).join('');
+    const verdict = Math.abs(b.diff)<0.005 ? 'Balanced'
+      : (b.diff>0 ? 'Annulus heavier: tends to push fluid up the drill string (U-tube)' : 'String heavier: tends to push fluid up the annulus (U-tube)');
+    return `
+      <div style="font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:0.05em;color:var(--text-muted);margin:18px 0 6px;">Hydrostatic Pressure &amp; Imbalance</div>
+      <div class="modal-hint" style="margin-bottom:6px;">Well filled with drilling mud (${b.rhoM} sg, set in Drilling Mud); the pills replace mud over their depth intervals. Vertical well assumed (MD = TVD). Default reference depth is the bottom of the drill string.</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+        <label style="font-size:11px;text-transform:uppercase;color:var(--text-muted);">Reference depth (m)</label>
+        <input type="number" id="dsPillRefDepth" class="table-cell-input" value="${dsRound1(b.D)}" step="1" min="0" style="width:90px;">
+        <button id="dsPillRefAuto" class="ghost" style="width:auto;padding:3px 10px;">Auto</button>
+      </div>
+      <div class="modal-table-wrap"><table class="modal-table"><thead><tr><th></th><th>Pressure (bar)</th><th>Pressure (psi)</th><th>Avg gradient (bar/m)</th><th>Avg gradient (psi/ft)</th></tr></thead><tbody>
+        <tr><td>Internal (drill string)</td><td data-pb="int">${f(b.pInt)}</td><td data-pb="intpsi">${psi(b.pInt)}</td><td data-pb="gint">${g3(b.gInt)}</td><td data-pb="gintpsi">${g4(b.gInt*DS_PSI_PER_FT_PER_BARM)}</td></tr>
+        <tr><td>Annulus</td><td data-pb="ann">${f(b.pAnn)}</td><td data-pb="annpsi">${psi(b.pAnn)}</td><td data-pb="gann">${g3(b.gAnn)}</td><td data-pb="gannpsi">${g4(b.gAnn*DS_PSI_PER_FT_PER_BARM)}</td></tr>
+        <tr><td><b>Imbalance (Annulus &minus; Internal)</b></td><td data-pb="diff"><b>${f(b.diff)}</b></td><td data-pb="diffpsi"><b>${psi(b.diff)}</b></td><td data-pb="gdiff">${g3(b.gAnn-b.gInt)}</td><td data-pb="gdiffpsi">${g4((b.gAnn-b.gInt)*DS_PSI_PER_FT_PER_BARM)}</td></tr>
+      </tbody></table></div>
+      <div style="font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:0.05em;color:var(--text-muted);margin:14px 0 6px;">Pressure Gradient by Fluid</div>
+      <div class="modal-table-wrap"><table class="modal-table"><thead><tr><th>Fluid</th><th>Location</th><th>Density (sg)</th><th>Gradient (bar/m)</th><th>Gradient (psi/ft)</th></tr></thead><tbody data-pb="fluids">${fluids}</tbody></table></div>
+      <div data-pb="verdict" style="margin-top:6px;font-size:12px;color:var(--accent);">${verdict}</div>`;
+  }
+  function dsRenderPills(intervals, strComps){
+    const host = document.getElementById('dsPillsBody');
+    if (!host) return;
+    const unitLabel = dsUomVolumeUnit==='m3' ? 'm³' : 'bbl';
+    const toDisp = (bbl)=> dsUomVolumeUnit==='m3' ? bbl*DS_BBL_TO_M3 : bbl;
+    const fromDisp = (v)=> dsUomVolumeUnit==='m3' ? v/DS_BBL_TO_M3 : v;
+    // Pumping sequence = row order. From bottom: the first pill sits deepest and later pills stack above it.
+    // From top: the first pill sits at the top of the column and later pills stack below it.
+    const calcAll = ()=>{
+      const out = {};
+      const placed = {};
+      dsPillPlacements().placements.forEach(pp=>{ (placed[pp.pill.id] = placed[pp.pill.id] || []).push(pp); });
+      dsState.pills.forEach(pl=>{
+        const vol = pl.volume!=null ? pl.volume : 0;
+        const mass = pl.density!=null ? vol*DS_BBL_TO_M3*pl.density : null; // m3 x sg(t/m3) = tonnes
+        const o = { mass: mass!=null ? mass.toFixed(2) : '—', str:'—', ann:'—', ivl:'—' };
+        const pps = placed[pl.id] || [];
+        if (pps.length){
+          o.ivl = pps.map(pp=>`${dsRound1(pp.top)}–${dsRound1(pp.bot)}`).join(' / ');
+          const si = pps.find(pp=>pp.loc==='internal'), an = pps.find(pp=>pp.loc==='annular');
+          if (si) o.str = `${dsRound1(si.len)}${si.full?' (string full)':''}`;
+          if (an) o.ann = `${dsRound1(an.len)}${an.full?' (annulus full)':''}${an.displaced?' (displaced from string)':''}`;
+        }
+        out[pl.id] = o;
+      });
+      return out;
+    };
+    const updateCells = ()=>{
+      const all = calcAll();
+      host.querySelectorAll('tr[data-pill]').forEach(tr=>{
+        const c = all[parseInt(tr.dataset.pill)]; if (!c) return;
+        tr.querySelector('[data-pc="mass"]').textContent = c.mass;
+        tr.querySelector('[data-pc="ivl"]').textContent = c.ivl;
+        tr.querySelector('[data-pc="str"]').textContent = c.str;
+        tr.querySelector('[data-pc="ann"]').textContent = c.ann;
+      });
+      dsRender(dsSelectedPillId!=null ? undefined : {skipInspector:true}); // keep the drawing (and a selected pill's Inspector) in step with the pills
+      refreshBalance(true);
+    };
+    const all0 = calcAll();
+    const all0Disp = {}; dsPillPlacements().placements.forEach(pp=>{ if (pp.displaced) all0Disp[pp.pill.id] = true; });
+    const n = dsState.pills.length;
+    const rows = dsState.pills.map((pl,i)=>{
+      const c = all0[pl.id];
+      return `<tr data-pill="${pl.id}">
+        <td style="white-space:nowrap;"><b>${i+1}</b>
+          <button class="ghost" data-pf="up" title="Pump earlier" ${i===0?'disabled':''} style="width:auto;padding:1px 6px;">&uarr;</button><button class="ghost" data-pf="down" title="Pump later" ${i===n-1?'disabled':''} style="width:auto;padding:1px 6px;">&darr;</button></td>
+        <td><input type="text" class="table-cell-input" data-pf="name" value="${escAttr(pl.name||'')}" placeholder="e.g. Hi-Vis pill" style="width:150px;"></td>
+        <td><input type="number" class="table-cell-input" data-pf="volume" value="${pl.volume!=null?dsRound1(toDisp(pl.volume)*100)/100:''}" step="0.1" min="0" style="width:80px;"></td>
+        <td><input type="number" class="table-cell-input" data-pf="density" value="${pl.density!=null?pl.density:''}" step="0.01" min="0" style="width:70px;"></td>
+        <td><select class="table-cell-input" data-pf="location" style="width:95px;"><option value="internal"${pl.location!=='annular'?' selected':''}>Internal</option><option value="annular"${pl.location==='annular'?' selected':''}>Annular</option></select></td>
+        <td style="white-space:nowrap;"><input type="color" class="table-cell-input" data-pf="color" title="Pill colour" value="${dsPillColor(pl,i)}" style="width:42px;height:26px;padding:1px;">${all0Disp[pl.id] ? `<input type="color" class="table-cell-input" data-pf="dcolor" title="Displaced-volume colour" value="${dsPillDispColor(pl,i)}" style="width:42px;height:26px;padding:1px;margin-left:4px;">` : ''}</td>
+        <td data-pc="mass">${c.mass}</td><td data-pc="ivl">${c.ivl}</td><td data-pc="str">${c.str}</td><td data-pc="ann">${c.ann}</td>
+        <td><button class="danger-btn" data-pf="remove" style="padding:3px 8px;">&times;</button></td>
       </tr>`;
-    }).join('') + `
-      <tr style="border-top:2px solid var(--border);font-weight:700;">
-        <td colspan="5" style="text-align:right;">Total:</td>
-        <td>${dsFmtVolume(totalInternal)}</td>
-        <td colspan="3"></td>
-        <td>${dsFmtVolume(totalAnnular)}</td>
-      </tr>`;
+    }).join('') || `<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:14px;">No pills yet. Use "+ Add Pill" below.</td></tr>`;
+    host.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+        <label style="font-size:11px;text-transform:uppercase;color:var(--text-muted);">Pump from</label>
+        <select id="dsPillMode" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:4px 8px;"><option value="bottom"${dsState.pillMode!=='top'?' selected':''}>Bottom</option><option value="top"${dsState.pillMode==='top'?' selected':''}>Top</option></select>
+      </div>
+      <div class="modal-hint" style="margin-bottom:6px;">Pumping sequence: row 1 is pumped first; use the arrows to change the order. <b>Bottom:</b> row 1 sits deepest (bottom of the drill string / annulus) and the next rows stack above it. <b>Top:</b> row 1 sits at the top of the column and the next rows stack below it. Depth interval is shown for the chosen location.</div>
+      <div class="modal-table-wrap"><table class="modal-table"><thead><tr><th>Seq.</th><th>Pill</th><th>Volume (${unitLabel})</th><th>Density (sg)</th><th>Location</th><th>Color</th><th>Mass (t)</th><th>Depth interval (m)</th><th>Length in string (m)</th><th>Height in annulus (m)</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <button id="dsAddPill" class="ghost" style="width:auto;padding:5px 12px;margin-top:8px;">+ Add Pill</button>
+      <button id="dsResetPillLabels" class="ghost" style="width:auto;padding:5px 12px;margin-top:8px;">Reset Label Positions</button>
+      <div id="dsPillBalance">${dsPillBalanceHtml()}</div>`;
+    const bindBalance = ()=>{
+      const inp = document.getElementById('dsPillRefDepth');
+      inp.addEventListener('input', ()=>{
+        dsPillRefDepth = inp.value==='' ? null : Math.max(0, parseFloat(inp.value)||0);
+        refreshBalance(true);
+      });
+      document.getElementById('dsPillRefAuto').addEventListener('click', ()=>{ dsPillRefDepth = null; refreshBalance(false); });
+    };
+    // update the numbers in place (keeps typing focus in the reference-depth field)
+    const refreshBalance = (keepDepthInput)=>{
+      const box = document.getElementById('dsPillBalance'); if (!box) return;
+      if (!box.querySelector('#dsPillRefDepth')){ box.innerHTML = dsPillBalanceHtml(); bindBalance(); return; }
+      const tmp = document.createElement('div'); tmp.innerHTML = dsPillBalanceHtml();
+      box.querySelectorAll('[data-pb]').forEach(el=>{ const n = tmp.querySelector(`[data-pb="${el.dataset.pb}"]`); if (n) el.innerHTML = n.innerHTML; });
+      if (!keepDepthInput) box.querySelector('#dsPillRefDepth').value = tmp.querySelector('#dsPillRefDepth').value;
+    };
+    bindBalance();
+    document.getElementById('dsPillMode').addEventListener('change', e=>{
+      dsState.pillMode = e.target.value==='top' ? 'top' : 'bottom';
+      dsRenderPills(intervals, strComps); dsRender({skipInspector:true});
+    });
+    document.getElementById('dsResetPillLabels').addEventListener('click', ()=>{
+      dsState.pills.forEach(pl=>{ pl.labelDx = 0; pl.labelDy = 0; pl.dLabelDx = 0; pl.dLabelDy = 0; });
+      dsRender({skipInspector:true});
+    });
+    document.getElementById('dsAddPill').addEventListener('click', ()=>{
+      dsState.pills.push({ id: dsNextPillId++, name: `Pill ${dsState.pills.length+1}`, volume: null, density: null, location: 'internal' });
+      dsRenderPills(intervals, strComps); dsRender({skipInspector:true});
+    });
+    host.querySelectorAll('tr[data-pill]').forEach(tr=>{
+      const pl = dsState.pills.find(x=>x.id===parseInt(tr.dataset.pill));
+      if (!pl) return;
+      tr.querySelectorAll('input[data-pf]').forEach(inp=>{
+        inp.addEventListener('input', ()=>{
+          const f = inp.dataset.pf;
+          if (f==='color') pl.color = inp.value;
+          else if (f==='dcolor') pl.dColor = inp.value;
+          else if (f==='name') pl.name = inp.value;
+          else if (f==='volume') pl.volume = inp.value==='' ? null : fromDisp(parseFloat(inp.value)||0);
+          else if (f==='density') pl.density = inp.value==='' ? null : (parseFloat(inp.value)||0);
+          updateCells(); // update the calculated cells in place so typing keeps its focus
+        });
+      });
+      tr.querySelector('select[data-pf="location"]').addEventListener('change', e=>{
+        pl.location = e.target.value;
+        updateCells();
+      });
+      const move = (d)=>{
+        const i = dsState.pills.indexOf(pl), j = i+d;
+        if (j<0 || j>=dsState.pills.length) return;
+        dsState.pills.splice(i,1); dsState.pills.splice(j,0,pl);
+        dsRenderPills(intervals, strComps); dsRender({skipInspector:true});
+      };
+      tr.querySelector('[data-pf="up"]').addEventListener('click', ()=>move(-1));
+      tr.querySelector('[data-pf="down"]').addEventListener('click', ()=>move(1));
+      tr.querySelector('[data-pf="remove"]').addEventListener('click', ()=>{
+        dsState.pills = dsState.pills.filter(x=>x.id!==pl.id);
+        dsRenderPills(intervals, strComps); dsRender({skipInspector:true});
+      });
+    });
+  }
+  function dsOpenPills(){
+    const intervals = dsComputeVolumeIntervals();
+    const strComps = dsState.components.filter(c=> !DS_TYPES[c.type]?.wellFeature && !DS_TYPES[c.type]?.point).slice().sort((a,b)=>a.top-b.top);
+    dsRenderPills(intervals, strComps);
+  }
+  function dsRenderVolumes(){
+    const unitLabel = dsUomVolumeUnit==='m3' ? 'm\u00b3' : 'bbl';
+    const capLabel = 'L/m';
+    const body = document.getElementById('dsVolumesBody');
+    const intervals = dsComputeVolumeIntervals();
+    const strComps = dsState.components.filter(c=> !DS_TYPES[c.type]?.wellFeature && !DS_TYPES[c.type]?.point).slice().sort((a,b)=>a.top-b.top);
+    const holes = dsState.components.filter(c=>c.type==='openhole').slice().sort((a,b)=>a.top-b.top);
+    const casings = dsState.components.filter(c=>c.type==='casing').slice().sort((a,b)=>a.top-b.top);
+    const sumAnn = (pred)=>{
+      let any=false, t=0;
+      intervals.forEach(iv=>{ if (pred(iv) && iv.annularVol!=null){ any=true; t+=iv.annularVol; } });
+      return any ? t : null;
+    };
+    const tdr = (v)=>`<td>${v}</td>`;
+    const emptyRow = (cols,msg)=>`<tr><td colspan="${cols}" style="text-align:center;color:var(--text-muted);padding:14px;">${msg}</td></tr>`;
+    const section = (title, head, rows, total)=>`
+      <div style="font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:0.05em;color:var(--text-muted);margin:14px 0 6px;">${title}</div>
+      <div class="modal-table-wrap"><table class="modal-table"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}${total||''}</tbody></table></div>`;
+
+    // 1. Drill String
+    let dsInt=0, dsAnnT=0, dsAnnAny=false;
+    const dsRows = strComps.map(c=>{
+      const capFt = dsComponentCapacityPerFt(c);
+      const len = c.bot-c.top;
+      const intVol = capFt!=null ? capFt*len*DS_M_TO_FT : null;
+      const ann = sumAnn(iv=>iv.dsComp===c);
+      if (intVol!=null) dsInt+=intVol;
+      if (ann!=null){ dsAnnAny=true; dsAnnT+=ann; }
+      return `<tr>${tdr(c.label)}${tdr(c.top)}${tdr(c.bot)}${tdr(dsRound1(len))}${tdr(c.od)}${tdr(c.innerDiameter!=null?c.innerDiameter:'\u2014')}${tdr(dsFmtCap(capFt))}${tdr(dsFmtVolume(intVol))}${tdr(dsFmtVolume(ann))}</tr>`;
+    }).join('') || emptyRow(9,'No drill string components yet.');
+    const dsTotal = strComps.length ? `<tr style="border-top:2px solid var(--border);font-weight:700;"><td colspan="7" style="text-align:right;">Total:</td>${tdr(dsFmtVolume(dsInt))}${tdr(dsAnnAny?dsFmtVolume(dsAnnT):'\u2014')}</tr>` : '';
+
+    // 2 + 3. Open Hole and Casing: one row per drill string component that sits inside the
+    // feature (intervals are split at every component / feature boundary); stretches with no
+    // drill string in them are listed too, as open hole / casing volume only
+    const featureRows = (feats, noneMsg, cols)=>{
+      let gross=0, annT=0, any=false;
+      const rows = [];
+      feats.forEach(f=>{
+        const capFt = dsComponentCapacityPerFt(f);
+        intervals.filter(iv=>iv.wellFeat===f).forEach(iv=>{
+          const holeVol = capFt!=null ? capFt*iv.length*DS_M_TO_FT : null;
+          // with a drill string in it the annulus is hole minus pipe; without one it is the whole hole
+          const ann = iv.dsComp ? iv.annularVol : holeVol;
+          if (holeVol!=null) gross += holeVol;
+          if (ann!=null){ any=true; annT += ann; }
+          rows.push(`<tr>${tdr(f.label)}${tdr(iv.dsComp ? iv.dsComp.label : '<span style="color:var(--text-muted);">\u2014 no drill string \u2014</span>')}${tdr(iv.top)}${tdr(iv.bot)}${tdr(iv.length)}${tdr(iv.wellboreId!=null?iv.wellboreId:'\u2014')}${tdr(iv.dsComp ? iv.dsComp.od : '\u2014')}${tdr(dsFmtCap(capFt))}${tdr(dsFmtVolume(holeVol))}${tdr(dsFmtVolume(ann))}</tr>`);
+        });
+      });
+      const total = rows.length ? `<tr style="border-top:2px solid var(--border);font-weight:700;"><td colspan="8" style="text-align:right;">Total:</td>${tdr(dsFmtVolume(gross))}${tdr(any?dsFmtVolume(annT):'\u2014')}</tr>` : '';
+      return { rows: rows.join('') || emptyRow(cols, noneMsg), total };
+    };
+    const ohT = featureRows(holes, 'No Open Hole defined.', 10);
+    const csgT = featureRows(casings, 'No Casing defined.', 10);
+
+    // overall = drill string internal + every annular volume (string vs. open hole / casing)
+    const annAll = intervals.reduce((t,iv)=> t + (iv.annularVol||0), 0);
+    const overall = `
+      <div style="display:flex;justify-content:flex-end;margin-top:14px;font-weight:700;" title="Internal volume of the drill string + annular volume between the string and the wellbore">
+        Overall Volume (Internal + Annular): &nbsp;${dsFmtVolume(dsInt + annAll)} ${unitLabel}
+      </div>`;
+
+    body.innerHTML =
+      section('Drill String Volume', ['Component','Top (m)','Bottom (m)','Length (m)','OD (in)','ID (in)',`Capacity (${capLabel})`,`Internal Vol (${unitLabel})`,`Annular Vol (${unitLabel})`], dsRows, dsTotal) +
+      section('Casing Volume', ['Casing','Drill String Component','Top (m)','Bottom (m)','Length (m)','Casing ID (in)','String OD (in)',`Capacity (${capLabel})`,`Casing Vol (${unitLabel})`,`Annular Vol (${unitLabel})`], csgT.rows, csgT.total) +
+      section('Open Hole Volume', ['Open Hole','Drill String Component','Top (m)','Bottom (m)','Length (m)','Hole Size (in)','String OD (in)',`Capacity (${capLabel})`,`Hole Vol (${unitLabel})`,`Annular Vol (${unitLabel})`], ohT.rows, ohT.total) +
+      overall;
   }
   function dsRenderBom(){
     const tbody = document.getElementById('dsBomTbody');
@@ -7900,6 +8725,8 @@
     const tbody = document.getElementById('dsTableViewTbody');
     tbody.innerHTML = '';
     dsRestackComponents();
+    const wtHead = document.getElementById('dsWeightColHead');
+    if (wtHead) wtHead.textContent = dsWeightColUnit==='kgm' ? 'WT (KG/M)' : 'WT (PPF)';
     const unitSel = document.getElementById('dsWeightColUnitSelect');
     if (unitSel){
       unitSel.value = dsWeightColUnit;
@@ -8009,7 +8836,7 @@
           const field = inp.dataset.field;
           const val = inp.value;
           if (field==='label') c.label = val;
-          else if (field==='top') c.top = dsRound1(Math.max(0, Math.min(parseFloat(val)||0, dsState.totalDepth-0.1)));
+          else if (field==='top') c.top = dsRound1(Math.max(0, Math.min(parseFloat(val)||0, DS_MAX_MD-0.1)));
           else if (field==='len') c.bot = dsRound1(c.top + Math.max(0.1, parseFloat(val)||0.1));
           else if (field==='od'){ c.od = Math.max(0.5, parseFloat(val)||c.od); if (['drillcollar','jar','mwd','accelerator','circsub','floatvalve'].includes(c.type)){ c.tjOd = c.od; c.weight = dsCollarWeight(c.od, c.innerDiameter); } }
           else if (field==='bodyod'){ c.bodyOd = Math.max(0.5, Math.min(parseFloat(val)||c.bodyOd, c.od-0.1)); }
@@ -8099,7 +8926,7 @@
       totalRow.style.borderTop = '2px solid var(--border)';
       totalRow.innerHTML = `
         <td colspan="5" style="text-align:right;font-weight:700;padding:8px 10px;">Total:</td>
-        <td id="dsTableViewTotal" style="font-weight:700;padding:8px 10px;" title="Total Depth follows this: ${dsState.totalDepth} m">${totalLenDisplay}</td>
+        <td id="dsTableViewTotal" style="font-weight:700;padding:8px 10px;" title="Sum of all drill string component lengths">${totalLenDisplay}</td>
         <td colspan="3"></td>
         <td style="font-weight:700;padding:8px 10px;white-space:nowrap;" title="Sum of each component's weight (lb/ft) x length">
           ${displayWeight}
@@ -8154,8 +8981,7 @@
       item.addEventListener('click', e=>{
         e.stopPropagation();
         const type = item.dataset.type;
-        const deepestBot = dsState.components.reduce((max,c)=>Math.max(max,c.bot), 0);
-        dsAddComponent(type, deepestBot + (DS_TYPES[type].length || 15) / 2);
+        dsAddComponent(type, null, !DS_TYPES[type].wellFeature);
         dsRestackComponents();
         dsRenderTableView();
         if (['drillpipe','hwdp'].includes(type)){
@@ -8442,6 +9268,7 @@
   document.getElementById('dsMudDensity').addEventListener('change', e=>{
     dsMud.density = Math.max(0.5, Math.min(3, parseFloat(e.target.value)||1.2));
     e.target.value = dsMud.density;
+    if (document.getElementById('dsPillsOverlay').style.display==='flex') dsOpenPills();
     dsRender();
   });
   document.getElementById('dsUomBtn').addEventListener('click', ()=>{
@@ -8465,6 +9292,7 @@
   document.getElementById('dsUomLinearWeight').addEventListener('change', e=>{
     dsWeightColUnit = e.target.value;
     dsRenderTableView();
+    dsRenderInspector(); // its Wt field / label follow the same unit
   });
   document.getElementById('dsUomWeight').addEventListener('change', e=>{
     dsWeightUnit = e.target.value;
@@ -8477,6 +9305,7 @@
   document.getElementById('dsUomVolume').addEventListener('change', e=>{
     dsUomVolumeUnit = e.target.value;
     dsRenderVolumes();
+    dsRenderInspector(); // Capacity field follows the same unit
   });
   document.getElementById('dsBomBtn').addEventListener('click', ()=>{
     dsRenderBom();
@@ -8496,9 +9325,26 @@
     dsRenderVolumes();
     document.getElementById('dsVolumesOverlay').style.display = 'flex';
   });
+  document.getElementById('dsPillsBtn').addEventListener('click', ()=>{
+    document.getElementById('dsPillsUnitSelect').value = dsUomVolumeUnit;
+    dsOpenPills();
+    document.getElementById('dsPillsOverlay').style.display = 'flex';
+  });
+  document.getElementById('dsPillsUnitSelect').addEventListener('change', e=>{
+    dsUomVolumeUnit = e.target.value;
+    dsOpenPills();
+    dsRenderInspector();
+  });
+  document.getElementById('dsClosePills').addEventListener('click', ()=>{
+    document.getElementById('dsPillsOverlay').style.display = 'none';
+  });
+  document.getElementById('dsPillsOverlay').addEventListener('click', e=>{
+    if (e.target.id === 'dsPillsOverlay') e.target.style.display = 'none';
+  });
   document.getElementById('dsVolumesUnitSelect').addEventListener('change', e=>{
     dsUomVolumeUnit = e.target.value;
     dsRenderVolumes();
+    dsRenderInspector(); // Capacity field follows the same unit
   });
   document.getElementById('dsCloseVolumes').addEventListener('click', ()=>{
     document.getElementById('dsVolumesOverlay').style.display = 'none';
@@ -8509,8 +9355,7 @@
   document.getElementById('dsZoomOut').addEventListener('click', ()=>{ dsZoom=Math.max(0.3,dsZoom/1.2); dsRender(); });
   document.getElementById('dsZoomLabel').addEventListener('click', ()=>{ dsZoom=1; dsPanX=0; dsPanY=0; dsRender(); });
   document.getElementById('dsTotalDepth').addEventListener('change', e=>{
-    dsState.totalDepth = Math.max(50, parseFloat(e.target.value)||3200);
-    dsRender();
+    dsState.totalDepth = Math.max(50, parseFloat(e.target.value)||3200); // description only — does not change the drawing
   });
   document.getElementById('dsClearAll').addEventListener('click', ()=>{
     dsConfirm('Clear all drill string components?', ()=>{
@@ -8518,7 +9363,7 @@
     });
   });
   document.getElementById('dsSaveDesign').addEventListener('click', ()=>{
-    const data = { format:'drillstring-sketch', version:1, wellName: document.getElementById('dsWellName').value, section: document.getElementById('dsSection').value, totalDepth: dsState.totalDepth, notes: document.getElementById('dsNotes').value, components: dsState.components };
+    const data = { format:'drillstring-sketch', version:1, wellName: document.getElementById('dsWellName').value, section: document.getElementById('dsSection').value, totalDepth: dsState.totalDepth, pills: dsState.pills, pillMode: dsState.pillMode, notes: document.getElementById('dsNotes').value, components: dsState.components };
     const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
     dsDownloadBlob(blob, (document.getElementById('dsWellName').value||'DrillString').replace(/[^a-z0-9\-_]+/gi,'_') + '.json');
   });
@@ -8536,6 +9381,9 @@
       document.getElementById('dsSection').value = data.section || '';
       document.getElementById('dsNotes').value = data.notes || '';
       dsState.components = data.components.map(c=>({labelDx:0, labelDy:0, ...c}));
+      dsState.pills = Array.isArray(data.pills) ? data.pills : [];
+      dsState.pillMode = data.pillMode==='top' ? 'top' : 'bottom';
+      dsNextPillId = dsState.pills.reduce((m,x)=>Math.max(m,(x.id||0)+1),1);
       dsNextId = dsState.components.reduce((max,c)=>Math.max(max,(c.id||0)+1),1);
       dsSelectedId = null;
       dsRender();
