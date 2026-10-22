@@ -416,6 +416,7 @@
   <button class="sheet-tab" id="tabDrilling" data-sheet="drilling">Well Drilling</button>
   <button class="sheet-tab" id="tabDst" data-sheet="dst">Well Testing</button>
   <button class="sheet-tab" id="tabBop" data-sheet="bop">BOP Configuration</button>
+  <button class="sheet-tab" id="tabFlow" data-sheet="flow">Data Flow</button>
   <div style="margin-left:auto;display:flex;gap:6px;align-items:center;padding-bottom:4px;">
     <button id="projLoadTop" class="ghost toolbar-btn" style="width:auto;padding:4px 12px;" title="Load a project file with all designs: Casing, Drill String, Well Drilling, Well Testing and BOP">Load Project</button>
     <button id="projSaveTop" class="ghost toolbar-btn" style="width:auto;padding:4px 12px;" title="Save ALL designs (Casing, Drill String, Well Drilling, Well Testing, BOP) and Project Details into one file">Save Project</button>
@@ -749,10 +750,10 @@
     <hr class="separator">
     <button id="openCatalog" class="ghost toolbar-btn">Casing Catalog</button>
     <button id="openCementVolume" class="ghost toolbar-btn">Cement Volume</button>
-    <button id="openTestingZones" class="ghost toolbar-btn">Testing Zones</button>
+    <button id="openTestingZones" class="ghost toolbar-btn" title="Pay / testing zones are edited in Project Details">Testing Zones</button>
     <button id="openTableView" class="ghost toolbar-btn">Table View</button>
     <button id="openVolumeTable" class="ghost toolbar-btn">Volume Table</button>
-    <button id="openGeology" class="ghost toolbar-btn">Geology</button>
+    <button id="openGeology" class="ghost toolbar-btn" title="Geology is edited in Project Details">Geology</button>
     <button id="openBitsRecords" class="ghost toolbar-btn">Bits Records</button>
     <button id="openActivities" class="ghost toolbar-btn">Drilling Activities</button>
     <hr class="separator">
@@ -3097,6 +3098,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
     });
   }
   window.__csDesigns = ()=> loadManagerDesigns().slice().sort((a,b)=>b.savedAt-a.savedAt).map(d=>({ id:d.id, name:(d.wellName||'Untitled Well')+(d.designVersion?' v'+d.designVersion:''), totalDepth:d.data&&d.data.totalDepth, components:(d.data&&d.data.components)||[] }));
+  window.__geoGet = ()=>({ geology: state.geology, zones: state.testingZones, totalDepth: state.totalDepth });
   window.__csData = ()=>({components:state.components, zones:state.testingZones, totalDepth:state.totalDepth, wellName:(document.getElementById('wellName')||{}).value});
   function render(opts){
     syncTestingZoneBoundsFromPerforations();
@@ -4886,6 +4888,18 @@ window.splitDepthEditor = function(textEl, current, onCommit){
         ${((comp.kind==='drillingactivity'||comp.kind==='drillingactivityinterval') && comp.type!=='coring' && comp.type!=='sidetrack') ? '' : `<div class="insp-field"><label>OD (in)</label><input type="number" id="f_od" value="${comp.od}" step="0.125"></div>`}
         ${(comp.kind==='casing'||comp.kind==='tubing') ? `<div class="insp-field"><label>ID (in)</label><input type="number" id="f_id" value="${comp.innerDiameter!=null?comp.innerDiameter:round1(comp.od*0.9)}" step="0.125"></div>` : `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>`}
       </div>
+      ${(comp.kind==='casing'||comp.kind==='tubing') ? (()=>{
+        const idv = comp.innerDiameter!=null ? comp.innerDiameter : round1(comp.od*0.9), cap = idv*idv*0.50671, len = Math.max(0, comp.bot-comp.top);
+        return `<div class="insp-row">
+          <div class="insp-field"><label>Capacity (L/m)</label><input type="text" id="f_cap" value="${cap.toFixed(2)}" disabled title="Internal capacity per metre = ID\u00b2 \u00d7 0.50671 (ID in inches)"></div>
+          <div class="insp-field"><label>Internal volume (m\u00b3)</label><input type="text" id="f_capvol" value="${(cap*len/1000).toFixed(2)}" disabled title="Capacity \u00d7 length (${round1(len)} m)"></div>
+        </div>`; })() : ''}
+      ${comp.kind==='casing' ? (()=>{
+        const pp = window.__pdPressureAt ? window.__pdPressureAt(comp.bot) : null; if (!pp) return '';
+        return `<div class="insp-row">
+          <div class="insp-field"><label>Pore at shoe (${pp.unit})</label><input type="text" value="${pp.pore}" disabled title="From the pore pressure profile in Project Details, at ${round1(comp.bot)} m"></div>
+          <div class="insp-field"><label>Frac at shoe (${pp.unit})</label><input type="text" value="${pp.frac}" disabled title="From the fracture gradient profile in Project Details, at ${round1(comp.bot)} m"></div>
+        </div>`; })() : ''}
       ${(comp.kind==='casing'||comp.kind==='tubing') ? `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>` : ''}` : (comp.kind!=='hanger' ? `<div class="insp-field"><label>Color</label><input type="color" id="f_color" value="${toHex(comp.color)}"></div>` : '')}
       ${comp.kind==='tubing' ? `
       <div class="insp-row">
@@ -5763,9 +5777,10 @@ window.splitDepthEditor = function(textEl, current, onCommit){
     renderVolumeTable();
     render();
   });
+  // Geology and Testing (pay) Zones are edited in Project Details (single source for all tabs)
   document.getElementById('openGeology').addEventListener('click', ()=>{
     renderGeologyTable();
-    document.getElementById('geologyOverlay').style.display = 'flex';
+    if (window.__pdShow) window.__pdShow('pdCardGeo'); else document.getElementById('geologyOverlay').style.display = 'flex';
   });
   document.getElementById('closeGeology').addEventListener('click', ()=>{
     document.getElementById('geologyOverlay').style.display = 'none';
@@ -5936,7 +5951,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
   });
   document.getElementById('openTestingZones').addEventListener('click', ()=>{
     renderTestingZonesTable();
-    document.getElementById('testingZonesOverlay').style.display = 'flex';
+    if (window.__pdShow) window.__pdShow('pdCardZones'); else document.getElementById('testingZonesOverlay').style.display = 'flex';
   });
   document.getElementById('closeTestingZones').addEventListener('click', ()=>{
     document.getElementById('testingZonesOverlay').style.display = 'none';
@@ -6131,6 +6146,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
         alert('That file doesn\'t look like a saved project (expected a list of designs).');
         return;
       }
+      { const pt = document.getElementById('tabProject'); if (pt) pt.click(); }   // the Merge / Replace question and the result are shown on Project Details, not on Casing Design
       askLoadMode(mode=>importProjectData(data, mode));
     };
     reader.onerror = ()=> alert('Could not read that file.');
@@ -6139,6 +6155,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
   // Merge / Replace / Cancel prompt shown before a loaded project touches anything
   function askLoadMode(onChoose){
     const ov = document.getElementById('loadModeOverlay');
+    if (ov.parentNode!==document.body) document.body.appendChild(ov);   // lift out of the Casing Design sheet so it shows on any tab
     ov.style.display = 'flex';
     const ids = ['loadModeMerge','loadModeReplace','loadModeCancel'];
     const done = ()=>{ ov.style.display='none'; ids.forEach(id=>{ const b=document.getElementById(id); b.replaceWith(b.cloneNode(true)); }); };
@@ -11204,6 +11221,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
   }
   function dsMgrApply(d){ dsApplyData(d.data || {components:[]}); dsMgrLoaded = d.id; }
   // whole-project save/load: every saved Drill String design plus whatever is on screen right now
+  window.__dsInfo = ()=>({ totalDepth: dsState.totalDepth, casingSrc: dsState.casingSrc||null, casingSrcName: dsState.casingSrcName||null, wellFeatures: dsState.components.filter(c=>c.type==='casing'||c.type==='openhole').map(c=>({type:c.type,top:c.top,bot:c.bot,od:c.od,id:c.innerDiameter})) });
   window.__dsProjectGet = ()=>{ dsMgrAutosave(); return JSON.parse(JSON.stringify({ designs: dsMgrLoad(), current: dsCollectData(), loadedId: dsMgrLoaded })); };
   window.__dsProjectSet = (d, mode)=>{
     if (!d || typeof d!=='object') return;
@@ -20337,6 +20355,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
       prevSheet = sheet;
       tabs.forEach(t=> t.classList.toggle('active', t===tab));
       document.getElementById('projectSheet').style.display = sheet==='project' ? 'block' : 'none';
+      { const fs = document.getElementById('flowSheet'); if (fs) fs.style.display = sheet==='flow' ? 'block' : 'none'; if (sheet==='flow' && window.__flowOpen) window.__flowOpen(); }
       if (sheet==='project' && window.__pdOpen) window.__pdOpen();
       document.getElementById('casingSheet').style.display = sheet==='casing' ? 'flex' : 'none';
       document.getElementById('drillStringSheet').style.display = sheet==='drillstring' ? 'flex' : 'none';
@@ -20361,7 +20380,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
     config:'Well configuration', unitType:'Drilling unit', wd:'Water depth', airgap:'Air gap', whd:'Wellhead depth', gl:'Ground level', rkb:'RKB elevation',
     lat:'Latitude', lon:'Longitude', x:'Easting', y:'Northing', name:'Project name', operator:'Operator', contractor:'Contractor', afe:'AFE', rev:'Revision',
     wellType:'Well type', profile:'Well profile', target:'Target', rig:'Rig', spud:'Spud date', complete:'Completion date', author:'Prepared by', reviewer:'Reviewed by',
-    approver:'Approved by', date:'Date', td:'Total depth (TD)', note:'Design note', custom:'Additional fields' };
+    approver:'Approved by', date:'Date', td:'Total depth (TD)', pressures:'Pore / fracture pressures', pUnit:'Pressure unit', note:'Design note', custom:'Additional fields' };
   const NUM = ['wd','airgap','whd','gl','rkb'];
   const MAPK = ['lat','lon','x','y','epsg','zone','zoneUnit','well'];
   const UNIT_TPL = {
@@ -20482,7 +20501,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
     g += dash(yD,BL) + lab(x0+4,yD-4,'Datum (MSL) \u00b7 0 m',null,BL,true) + lab(x1-4,yD-4,`${r1(mD)} m RKB`,'end',BL);
     if (Math.abs(yG-yR)>14) g += lab(off?cx+6:cx+56,(yR+yG)/2+4,`${r1(ag)} m`);
     if (!off && Math.abs(yD-yG)>14) g += lab(cx+56,(yG+yD)/2+4,`${r1(Math.abs(gl))} m`);
-    return `<svg viewBox="0 0 ${W} ${Ht}" width="100%" style="display:block;border-radius:4px;">${g}</svg>`;
+    return `<svg id="pdSchem" viewBox="0 0 ${W} ${Ht}" width="100%" style="display:block;border-radius:4px;">${g}</svg>`;
   }
 
   // ---- well location map (OpenStreetMap tiles, own small slippy-map: Web Mercator maths, drag / wheel / buttons)
@@ -20604,6 +20623,79 @@ window.splitDepthEditor = function(textEl, current, onCommit){
     say(`Ground level ${pd.gl} m AMSL at ${la}\u00b0, ${lo}\u00b0 \u00b7 ${src}. Terrain model value \u2013 check it against the site survey.`);
   }
 
+
+  // ---- pore / fracture pressure profile (stored in sg = g/cm3; shown in sg or ppg) -------------------------------
+  const SG_PPG = 8.3454;
+  const pUnit = ()=> pd.pUnit==='ppg' ? 'ppg' : 'sg';
+  const toDisp = v=> v==null||v==='' ? '' : (pUnit()==='ppg' ? (v*SG_PPG).toFixed(2) : (+v).toFixed(3));
+  const fromDisp = t=>{ const n = parseFloat(String(t).replace(',','.')); return isNaN(n) ? '' : (pUnit()==='ppg' ? n/SG_PPG : n); };
+  const pPts = live=> (!live && window.__flowFrozen && window.__flowFrozen.pressures) ? window.__flowFrozen.pressures.map(r=>Object.assign({},r)) : (pd.pressures||[]).filter(r=>r && num(r.md)!=null && (num(r.pore)!=null || num(r.frac)!=null)).map(r=>({ md:+r.md, pore:num(r.pore), frac:num(r.frac) })).sort((a,b)=>a.md-b.md);
+  function pAt(md, key){
+    const L = pPts().filter(r=>r[key]!=null); if (!L.length) return null;
+    if (md<=L[0].md) return L[0][key]; if (md>=L[L.length-1].md) return L[L.length-1][key];
+    for (let i=1;i<L.length;i++) if (md<=L[i].md){ const a = L[i-1], b = L[i]; return a[key] + (b[key]-a[key])*(md-a.md)/((b.md-a.md)||1); }
+    return null;
+  }
+  window.__pdPressureAt = md=>{ const po = pAt(md,'pore'), fr = pAt(md,'frac'); if (po==null && fr==null) return null;
+    return { pore: po==null?'–':toDisp(po), frac: fr==null?'–':toDisp(fr), poreSg: po, fracSg: fr, unit: pUnit()==='ppg'?'ppg':'sg' }; };
+  window.__pdPressures = ()=> pPts(true);
+  function pressurePlot(){
+    const W = 460, H = 540, ml = 74, mr = 30, mt = 40, mb = 44, g = window.__geoGet ? window.__geoGet() : { geology:[], zones:[], totalDepth:0 };
+    const pts = pPts(true);
+    let dmax = Math.max(num(pd.td)||0, g.totalDepth||0, ...pts.map(p=>p.md), ...g.geology.map(f=>f.bot||0), ...g.zones.map(z=>z.bot||0), 100);
+    const step = dmax>6000?1000:dmax>3000?500:dmax>1500?250:dmax>600?100:50; dmax = Math.ceil(dmax/step)*step;
+    const vals = pts.flatMap(p=>[p.pore,p.frac]).filter(v=>v!=null);
+    const u = pUnit(), k = u==='ppg'?SG_PPG:1;
+    let lo = vals.length ? Math.min(...vals) : 0.9, hi = vals.length ? Math.max(...vals) : 2.2;
+    lo = Math.floor((lo-0.1)*k*5)/(5*k); hi = Math.ceil((hi+0.1)*k*5)/(5*k);
+    const X = v=> ml + (v-lo)/((hi-lo)||1)*(W-ml-mr), Y = d=> mt + d/dmax*(H-mt-mb);
+    let s2 = `<rect width="${W}" height="${H}" fill="#fff"/>`;
+    const gx = Math.max(0.1, Math.round((hi-lo)*k/8*10)/10/k);
+    for (let v=lo; v<=hi+1e-9; v+=gx) s2 += `<line x1="${X(v)}" x2="${X(v)}" y1="${mt}" y2="${H-mb}" stroke="#e3e7ea"/><text x="${X(v)}" y="${H-mb+14}" font-size="10" text-anchor="middle" fill="#444" font-family="sans-serif">${(v*k).toFixed(u==='ppg'?1:2)}</text>`;
+    for (let d=0; d<=dmax; d+=step) s2 += `<line x1="${ml}" x2="${W-mr}" y1="${Y(d)}" y2="${Y(d)}" stroke="#e3e7ea"/><text x="${ml-6}" y="${Y(d)+3}" font-size="10" text-anchor="end" fill="#444" font-family="sans-serif">${d}</text>`;
+    // geology column on the left
+    g.geology.forEach(f=>{ if (f.bot>f.top) s2 += `<rect x="6" y="${Y(f.top)}" width="26" height="${Y(f.bot)-Y(f.top)}" fill="${esc(f.color||'#C9A876')}" stroke="#888" stroke-width=".5"><title>${esc((f.name||f.lithology||'Formation')+' '+f.top+'–'+f.bot+' m')}</title></rect>`
+      + (Y(f.bot)-Y(f.top)>12 ? `<text x="${ml+4}" y="${Y(f.top)+10}" font-size="9" fill="#8a8f94" font-family="sans-serif">${esc(f.name||f.lithology||'')}</text>` : ''); });
+    // pay / testing zones: strip on the right
+    g.zones.forEach(z=>{ if (z.bot>z.top) s2 += `<rect x="${W-mr-9}" y="${Y(z.top)}" width="9" height="${Math.max(2,Y(z.bot)-Y(z.top))}" fill="${esc(z.color||'#E5484D')}" fill-opacity=".75"><title>${esc((z.name||'Zone')+' '+z.top+'–'+z.bot+' m')}</title></rect>`; });
+    const line = key=>{ const L = pts.filter(p=>p[key]!=null); if (!L.length) return []; return [[L[0][key],0]].concat(L.map(p=>[p[key],p.md]), [[L[L.length-1][key],dmax]]); };
+    const po = line('pore'), fr = line('frac');
+    if (po.length && fr.length){ const poly = po.concat(fr.slice().reverse()).map(([v,d])=>X(v)+','+Y(d)).join(' '); s2 += `<polygon points="${poly}" fill="#3FA796" fill-opacity=".12"/>`; }
+    const draw = (L,c)=> L.length ? `<polyline points="${L.map(([v,d])=>X(v)+','+Y(d)).join(' ')}" fill="none" stroke="${c}" stroke-width="2"/>` : '';
+    s2 += draw(po,'#2F6FD0') + draw(fr,'#E5484D');
+    pts.forEach(p=>{ if (p.pore!=null) s2 += `<circle cx="${X(p.pore)}" cy="${Y(p.md)}" r="3" fill="#2F6FD0"/>`; if (p.frac!=null) s2 += `<circle cx="${X(p.frac)}" cy="${Y(p.md)}" r="3" fill="#E5484D"/>`; });
+    const td = num(pd.td); if (td!=null && td>0 && td<=dmax) s2 += `<line x1="${ml}" x2="${W-mr}" y1="${Y(td)}" y2="${Y(td)}" stroke="#222" stroke-dasharray="6,4"/><text x="${W-mr-12}" y="${Y(td)-4}" font-size="10" text-anchor="end" font-weight="700" fill="#222" font-family="sans-serif">TD ${td} m</text>`;
+    s2 += `<rect x="${ml}" y="${mt}" width="${W-ml-mr}" height="${H-mt-mb}" fill="none" stroke="#555"/>`;
+    s2 += `<text x="${ml}" y="16" font-size="11" fill="#2F6FD0" font-weight="700" font-family="sans-serif">● Pore</text><text x="${ml+60}" y="16" font-size="11" fill="#E5484D" font-weight="700" font-family="sans-serif">● Fracture</text><text x="${ml+140}" y="16" font-size="11" fill="#3FA796" font-weight="700" font-family="sans-serif">■ Window</text>`;
+    s2 += `<text x="${(ml+W-mr)/2}" y="${H-8}" font-size="10.5" text-anchor="middle" fill="#222" font-family="sans-serif">Equivalent density, ${u==='ppg'?'ppg':'sg (g/cm³)'}</text>`;
+    s2 += `<text x="14" y="${(mt+H-mb)/2}" font-size="10.5" text-anchor="middle" fill="#222" font-family="sans-serif" transform="rotate(-90 14 ${(mt+H-mb)/2})">MD, m</text>`;
+    return `<svg id="pdPlot" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;border-radius:4px;max-width:520px;margin:0 auto;">${s2}</svg>`;
+  }
+  function pressureTable(){
+    const rows = (pd.pressures||[]).map((r,i)=>`<tr><td><input class="table-cell-input" data-pdp="md" data-i="${i}" type="number" step="any" value="${esc(r.md)}" style="width:90px;"></td>
+      <td><input class="table-cell-input" data-pdp="pore" data-i="${i}" type="number" step="any" value="${toDisp(r.pore)}" style="width:80px;"></td>
+      <td><input class="table-cell-input" data-pdp="frac" data-i="${i}" type="number" step="any" value="${toDisp(r.frac)}" style="width:80px;"></td>
+      <td><input class="table-cell-input" data-pdp="note" data-i="${i}" type="text" value="${esc(r.note)}" style="width:100%;"></td>
+      <td><button class="ghost" data-pdprm="${i}" style="width:auto;padding:2px 9px;">&times;</button></td></tr>`).join('');
+    return `<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;"><label style="font-size:12px;color:var(--text-muted);">Units</label>
+        <select class="table-cell-input" data-pdu="1" style="height:28px;width:130px;"><option value="sg" ${pUnit()==='sg'?'selected':''}>sg (g/cm³)</option><option value="ppg" ${pUnit()==='ppg'?'selected':''}>ppg</option></select>
+        <button class="ghost" id="pdAddP" style="width:auto;padding:4px 12px;margin-left:auto;">+ Add point</button></div>
+      <table class="pd-t pd-ct"><thead><tr><th>Depth MD, m</th><th>Pore, ${pUnit()}</th><th>Fracture, ${pUnit()}</th><th>Note</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px;">No points yet. Add depth / pore / fracture gradient points (equivalent mud density).</td></tr>'}</tbody></table>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Values between points are interpolated. Depth is MD (the sketch treats the well as vertical). Casing Design shows the pore and fracture gradient at each casing shoe.</div>`;
+  }
+  function refreshPressures(table){
+    if (table){ const h = $('pdPTable'); if (h) h.innerHTML = pressureTable(); }
+    const pl = $('pdPlotHost'); if (pl) pl.innerHTML = pressurePlot();
+    if (window.__renderCasingSheet && 0) window.__renderCasingSheet();
+  }
+  // Geology and Testing (pay) Zones tables live in the Casing Design code; they are mounted here, the single place to edit them
+  const stash = document.createElement('div'); stash.id = 'pdStash'; stash.style.display = 'none'; document.body.appendChild(stash);
+  const mounts = ()=> [['pdGeoHost',['addGeologyRow','geologyTable']],['pdZonesHost',['addTestingZoneRow','testingZonesTable']]];
+  function stashTables(){ mounts().forEach(([h,ids])=> ids.forEach(id=>{ const e = $(id); if (!e) return; const n = id.endsWith('Table') ? e.parentNode : e; stash.appendChild(n); })); }
+  function mountTables(){ mounts().forEach(([h,ids])=>{ const host = $(h); if (host) ids.forEach(id=>{ const e = $(id); if (e) host.appendChild(id.endsWith('Table') ? e.parentNode : e); }); }); }
+  stashTables();
+  window.__pdShow = id=>{ $('tabProject').click(); setTimeout(()=>{ const el = $(id); if (el){ el.scrollIntoView({behavior:'smooth',block:'start'}); el.style.outline = '2px solid var(--accent)'; setTimeout(()=>{ el.style.outline = ''; }, 1500); } }, 60); };
+
   function changesHtml(){
     const ch = (pd.changes||[]).slice().sort((a,b)=>b.t-a.t);
     const list = showAll ? ch : ch.slice(0,5);
@@ -20659,14 +20751,16 @@ window.splitDepthEditor = function(textEl, current, onCommit){
            <div id="pdMapMsg" style="display:none;position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:11.5px;color:#333;"></div>
            <div style="position:absolute;right:0;bottom:0;background:rgba(255,255,255,.8);color:#333;font:10px sans-serif;padding:1px 5px;">&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" style="color:#235;">OpenStreetMap</a> contributors</div>
          </div>
-         <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">The well is placed from Surface latitude / longitude (decimal degrees, or degrees-minutes-seconds with N/S/E/W). If they are empty, UTM Easting / Northing is used when the EPSG code (326xx / 327xx) or Location zone (e.g. "UTM zone 39N") is given. Drag to pan, scroll to zoom. The map needs an internet connection.</div>`) +
+         <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">The well is placed from Surface latitude / longitude (decimal degrees, or degrees-minutes-seconds with N/S/E/W). If they are empty, UTM Easting / Northing is used when the EPSG code (326xx / 327xx) or Location zone (e.g. "UTM zone 39N") is given. Drag to pan, scroll to zoom. The map needs an internet connection.</div>`);
+    const projInfo =
       card('Project information', tbl(
         row('Project name',inp('name')) + row('Operator / Client',inp('operator')) + row('Drilling contractor',inp('contractor')) + row('Rig name',inp('rig')) +
         row('Well type',sel('wellType',['','Exploration','Appraisal','Development','Injection','Observation','Workover / Re-entry'])) +
         row('Well profile',sel('profile',['','Vertical','Directional (J / S type)','Horizontal','Multilateral'])) +
         row('Target / Objective',inp('target')) + row('AFE / Cost code',inp('afe')) + row('Revision',inp('rev')) +
         row('Spud date',inp('spud','date')) + row('Completion date',inp('complete','date')) +
-        row('Prepared by',inp('author')) + row('Reviewed by',inp('reviewer')) + row('Approved by',inp('approver')) + row('Date',inp('date','date')))) +
+        row('Prepared by',inp('author')) + row('Reviewed by',inp('reviewer')) + row('Approved by',inp('approver')) + row('Date',inp('date','date'))));
+    const changesCard =
       card('Changes', `<label class="pd-rad" style="margin-bottom:6px;"><input type="checkbox" id="pdShowAll" ${showAll?'checked':''}> Show all</label>${changesHtml()}`);
     const bottom =
       card('Design setting note',
@@ -20682,9 +20776,13 @@ window.splitDepthEditor = function(textEl, current, onCommit){
           <input class="table-cell-input" data-pdc="v" data-i="${i}" placeholder="Value" value="${esc(c.v)}">
           <button class="ghost" data-pdrm="${i}" style="width:auto;padding:2px 9px;">&times;</button></div>`).join('') +
         `<button id="pdAddCustom" class="ghost" style="width:100%;margin-top:4px;">+ Add field</button>`);
+    const geoCard = card('Geology (programmed formations)','<div class="modal-hint" style="margin:0 0 6px;">Formation tops, shown as a column next to the wellbore in Casing Design. Depths in MD, m.</div><div id="pdGeoHost"></div>',' id="pdCardGeo"'), zonesCard = card('Pay / testing zones','<div class="modal-hint" style="margin:0 0 6px;">Zones highlighted on the wellbore and used by Well Testing. Depths in MD, m.</div><div id="pdZonesHost"></div>',' id="pdCardZones"'),
+      pCard = card('Pore and fracture gradients','<div id="pdPTable">'+pressureTable()+'</div>',' id="pdCardP"'), plotCard = card('Pressure profile','<div id="pdPlotHost">'+pressurePlot()+'</div>');
+    stashTables();
     $('pdBody').innerHTML = `<div style="display:grid;grid-template-columns:minmax(300px,5fr) minmax(420px,7fr);gap:16px;align-items:start;">
-      <div style="display:flex;flex-direction:column;gap:14px;">${left}</div><div style="display:flex;flex-direction:column;gap:14px;">${right}</div></div>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">${bottom}</div>`;
+      <div style="display:flex;flex-direction:column;gap:14px;">${left}${projInfo}${pCard}${plotCard}</div><div style="display:flex;flex-direction:column;gap:14px;">${right}${geoCard}${zonesCard}</div></div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px;">${bottom}${changesCard}</div>`;
+    mountTables();
     mapInit();
   }
   // styles
@@ -20727,22 +20825,26 @@ window.splitDepthEditor = function(textEl, current, onCommit){
   document.querySelectorAll('.pd-open').forEach(b=>b.addEventListener('click', ()=> $('tabProject').click()));
   $('pdClear').addEventListener('click', ()=>{ if (confirm('Clear all project details?')){ pd = { custom: [], changes: pd.changes||[] }; build(); } });
   const body = $('pdBody');
-  const refreshSchematic = ()=>{ const c = body.querySelector('.pd-card svg'); if (c) c.outerHTML = schematic(); };
+  const refreshSchematic = ()=>{ const c = body.querySelector('#pdSchem'); if (c) c.outerHTML = schematic(); };
   body.addEventListener('input', e=>{
     const t = e.target;
     if (t.dataset.pd){ pd[t.dataset.pd] = t.value; if (NUM.includes(t.dataset.pd)) refreshSchematic(); if (MAPK.includes(t.dataset.pd)) mapUpdate(t.dataset.pd!=='well'); }
     else if (t.dataset.pdc){ const c = pd.custom[+t.dataset.i]; if (c) c[t.dataset.pdc] = t.value; }
+    else if (t.dataset.pdp){ const r = (pd.pressures||[])[+t.dataset.i]; if (r){ const f = t.dataset.pdp; r[f] = (f==='pore'||f==='frac') ? fromDisp(t.value) : t.value; refreshPressures(false); } }
   });
   body.addEventListener('change', e=>{
     const t = e.target;
     if (t.dataset.pd){ pd[t.dataset.pd] = t.value; if (MAPK.includes(t.dataset.pd)) mapUpdate(t.dataset.pd!=='well'); }
     else if (t.dataset.pdr){ pd[t.dataset.pdr] = t.value; if (t.dataset.pdr==='config'){ pd.unitType = ''; build(); } }
     else if (t.dataset.pdc2) pd[t.dataset.pdc2] = t.checked;
+    else if (t.dataset.pdu){ pd.pUnit = t.value; refreshPressures(true); }
     else if (t.id==='pdShowAll'){ showAll = t.checked; build(); }
   });
   body.addEventListener('click', e=>{
     const t = e.target.closest('button'); if (!t) return;
     if (t.id==='pdGetGl'){ getGroundLevel(t); }
+    else if (t.id==='pdAddP'){ const L = pd.pressures = pd.pressures||[], last = L[L.length-1]; L.push(last ? { md:(num(last.md)||0)+500, pore:last.pore, frac:last.frac, note:'' } : { md:0, pore:1.0, frac:1.5, note:'' }); refreshPressures(true); }
+    else if (t.dataset.pdprm!=null && t.dataset.pdprm!=='' && t.closest('#pdPTable')){ pd.pressures.splice(+t.dataset.pdprm,1); refreshPressures(true); }
     else if (t.id==='pdAddCustom'){ (pd.custom = pd.custom||[]).push({k:'',v:''}); build(); const ks = body.querySelectorAll('[data-pdc="k"]'); if (ks.length) ks[ks.length-1].focus(); }
     else if (t.dataset.pdrm!=null && t.dataset.pdrm!==''){ pd.custom.splice(+t.dataset.pdrm,1); build(); }
     else if (t.id==='pdAdjust'){ const a = num(pd.airgap)||0, w = num(pd.wd)||0; pd.whd = r1(a+w); build(); }
@@ -20755,6 +20857,156 @@ window.splitDepthEditor = function(textEl, current, onCommit){
     else if (t.classList.contains('pd-fmt')){ e.preventDefault(); $('pdNote').focus(); document.execCommand(t.dataset.cmd); }
   });
   body.addEventListener('mousedown', e=>{ if (e.target.closest && e.target.closest('.pd-fmt')) e.preventDefault(); });
+  { let tm = null; const later = e=>{ if (e.target.closest && (e.target.closest('#pdGeoHost') || e.target.closest('#pdZonesHost'))){ clearTimeout(tm); tm = setTimeout(()=>refreshPressures(false), 60); } };
+    ['input','change','click'].forEach(ev=> body.addEventListener(ev, later)); }
+})();
+
+/* ================= Data Flow: how the tabs share data, live ================= */
+(function(){
+  const $ = id=>document.getElementById(id);
+  const esc = v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const clone = o=> o==null ? o : JSON.parse(JSON.stringify(o));
+  const r1 = v=>Math.round(v*10)/10;
+  const num = v=>{ const n = parseFloat(v); return isNaN(n)?null:n; };
+  const TABS = [['PD','Project Details'],['CD','Casing Design'],['DSD','Drill String'],['WD','Well Drilling'],['WT','Well Testing'],['BC','BOP']];
+  // originals (live) accessors; consumers keep calling window.__xxx, which honours the Frozen links below
+  const O = { ground: window.__groundInfo, rkb: window.__rkbText, cs: window.__csData };
+  const mode = { levels:'live', casing:'live', zones:'live', pressures:'live' }, snap = {};
+  window.__flowFrozen = {};
+  window.__groundInfo = ()=> mode.levels==='frozen' ? clone(snap.levels.ground) : (O.ground ? O.ground() : null);
+  window.__rkbText   = ()=> mode.levels==='frozen' ? snap.levels.rkb : (O.rkb ? O.rkb() : null);
+  window.__csData = ()=>{
+    const o = O.cs();
+    if (mode.casing==='frozen'){ o.components = clone(snap.casing.components); o.totalDepth = snap.casing.totalDepth; o.wellName = snap.casing.wellName; }
+    if (mode.zones==='frozen') o.zones = clone(snap.zones);
+    return o;
+  };
+  const take = id=>{
+    if (id==='levels') snap.levels = { ground: clone(O.ground ? O.ground() : null), rkb: O.rkb ? O.rkb() : null };
+    else if (id==='casing'){ const o = O.cs(); snap.casing = { components: clone(o.components), totalDepth: o.totalDepth, wellName: o.wellName }; }
+    else if (id==='zones') snap.zones = clone(O.cs().zones);
+    else if (id==='pressures') window.__flowFrozen.pressures = clone(window.__pdPressures ? window.__pdPressures() : []);
+  };
+  const release = id=>{ if (id==='pressures') delete window.__flowFrozen.pressures; };
+
+  const cd = ()=> O.cs();
+  const pdv = ()=> window.__pdGet ? window.__pdGet() : {};
+  const geo = ()=> window.__geoGet ? window.__geoGet() : { geology:[], zones:[], totalDepth:0 };
+  const sigCD = comps=> comps.filter(c=>c.kind==='casing'||c.type==='openhole').map(c=> (c.kind==='casing'?'c':'o')+[c.top,c.bot,c.od,c.kind==='casing'?c.innerDiameter:''].map(v=>v==null?'':r1(+v)).join('/')).sort().join('|');
+  const sigDS = f=> f.map(c=> (c.type==='casing'?'c':'o')+[c.top,c.bot,c.od,c.type==='casing'?c.id:''].map(v=>v==null?'':r1(+v)).join('/')).sort().join('|');
+
+  // each item: what is shared, where it comes from, who reads it, how it is linked and whether the tabs agree
+  const ITEMS = [
+    { id:'levels', label:'Reference levels: RKB, air gap, ground level / seabed', src:'PD', cons:['CD','WT'], link:'switch',
+      eval(live){ const g = O.ground ? O.ground() : null, rk = O.rkb ? O.rkb() : null;
+        return g||rk ? { sum:[rk, g&&g.text].filter(Boolean).join(' · '), st:'ok' } : { sum:'not set', st:'missing', msg:'Enter the air gap and ground level (or water depth) in Project Details.' }; } },
+    { id:'td', label:'Total depth (TD)', src:'PD', cons:['CD','DSD'], link:'manual',
+      eval(){ const p = num(pdv().td), c = geo().totalDepth, d = window.__dsInfo ? window.__dsInfo().totalDepth : null;
+        const sum = `PD ${p==null?'–':p} · CD ${c} · DSD ${d==null?'–':d} m`;
+        if (p==null) return { sum, st:'missing', msg:'TD is not set in Project Details.' };
+        const bad = [c!==p?'CD':null, d!=null&&d!==p?'DSD':null].filter(Boolean);
+        return bad.length ? { sum, st:'mismatch', msg:bad.join(' and ')+' total depth differs from Project Details.', act:'fixtd', actLabel:'Set CD and DSD to PD TD' } : { sum, st:'ok' }; } },
+    { id:'geology', label:'Programmed geology (formations)', src:'PD', cons:['CD'], link:'fixed',
+      eval(){ const L = geo().geology.filter(f=>f.bot>f.top); return L.length ? { sum:`${L.length} formation${L.length>1?'s':''}, ${r1(Math.min(...L.map(f=>f.top)))}–${r1(Math.max(...L.map(f=>f.bot)))} m`, st:'ok' } : { sum:'none', st:'missing', msg:'No formations entered yet.' }; } },
+    { id:'zones', label:'Pay / testing zones', src:'PD', cons:['CD','WT'], link:'switch',
+      eval(){ const L = (O.cs().zones||[]).filter(z=>z.bot>z.top), td = geo().totalDepth, deep = L.filter(z=>z.bot>td+0.5);
+        if (!L.length) return { sum:'none', st:'missing', msg:'No zones entered yet.' };
+        const sum = `${L.length} zone${L.length>1?'s':''}: ${L.map(z=>(z.name||'Zone')+' '+r1(z.top)+'–'+r1(z.bot)).slice(0,3).join(', ')}${L.length>3?'…':''}`;
+        return deep.length ? { sum, st:'mismatch', msg:`${deep.length} zone${deep.length>1?'s are':' is'} below the Casing Design total depth (${td} m).` } : { sum, st:'ok' }; } },
+    { id:'pressures', label:'Pore and fracture gradients', src:'PD', cons:['CD'], link:'switch',
+      eval(){ const P = window.__pdPressures ? window.__pdPressures() : []; if (!P.length) return { sum:'none', st:'missing', msg:'No gradient points entered yet.' };
+        const bad = P.find(p=>p.pore!=null && p.frac!=null && p.pore>=p.frac);
+        const sum = `${P.length} point${P.length>1?'s':''}, ${r1(P[0].md)}–${r1(P[P.length-1].md)} m`;
+        return bad ? { sum, st:'mismatch', msg:`Pore gradient is not below the fracture gradient at ${r1(bad.md)} m.` } : { sum, st:'ok' }; } },
+    { id:'casing', label:'Casing and open hole program (current design)', src:'CD', cons:['WD','WT'], link:'switch',
+      eval(){ const o = O.cs(), n = o.components.filter(c=>c.kind==='casing').length, h = o.components.filter(c=>c.type==='openhole').length;
+        return n||h ? { sum:`${n} casing${n===1?'':'s'}, ${h} open hole${h===1?'':'s'}, TD ${o.totalDepth} m`, st:'ok' } : { sum:'empty', st:'missing', msg:'The current Casing Design has no casings or open hole.' }; } },
+    { id:'dsdcopy', label:'Casing and open hole copy in Drill String Design', src:'CD', cons:['DSD'], link:'snapshot',
+      eval(){ const di = window.__dsInfo ? window.__dsInfo() : null; if (!di) return { sum:'n/a', st:'planned' };
+        let ref = null, refName = 'current Casing Design';
+        if (di.casingSrc){ const d = (window.__csDesigns ? window.__csDesigns() : []).find(x=>x.id===di.casingSrc); if (d){ ref = d.components; refName = d.name; } }
+        else ref = O.cs().components;
+        if (!di.wellFeatures.length) return { sum:'no casing in DSD', st:'missing', msg:'Drill String Design has no casing / open hole copied yet.', act: di.casingSrc?null:'dsdupdate', actLabel:'Copy from Casing Design' };
+        if (ref==null) return { sum:'source design removed', st:'missing', msg:'The saved Casing Design used as the source is no longer in the list.' };
+        const same = sigCD(ref)===sigDS(di.wellFeatures);
+        return same ? { sum:`matches ${refName}`, st:'ok' } : { sum:`differs from ${refName}`, st:'mismatch', msg:'The casing / open hole copy in Drill String Design is out of date.', act:'dsdupdate', actLabel:'Update DSD from CD' }; } },
+    { id:'wd', label:'Actual casing depths, LOT / FIT and casing tests (Well Drilling)', src:'WD', cons:['CD','BC'], link:'planned', eval(){ return { sum:'not linked yet', st:'planned', msg:'Planned: next phase.' }; } },
+    { id:'dsd', label:'Drill string per section', src:'DSD', cons:['WD','WT'], link:'planned', eval(){ return { sum:'not linked yet', st:'planned', msg:'Planned.' }; } },
+    { id:'bop', label:'BOP per section and pressure tests', src:'BC', cons:['WD'], link:'planned', eval(){ return { sum:'not linked yet', st:'planned', msg:'Planned.' }; } },
+    { id:'ident', label:'Well name, rig, dates', src:'PD', cons:['CD','DSD','WD','WT','BC'], link:'planned', eval(){ return { sum:'each tab keeps its own', st:'planned', msg:'Planned: one shared well identity.' }; } }
+  ];
+  const COL = { ok:'#3DBB78', mismatch:'#E8A33D', stale:'#E8A33D', missing:'#8A97A3', planned:'#5B6670' };
+  const SEV = { mismatch:3, stale:3, missing:2, ok:1, planned:0 };
+  const LBL = { ok:'In sync', mismatch:'Check', stale:'Frozen, source changed', missing:'Missing', planned:'Planned' };
+
+  const state = {}; let log = [], lastSig = '', prev = {};
+  const logEv = (item, text)=>{ log.unshift({ t:Date.now(), item, text }); log = log.slice(0,200); lastSig = ''; };
+  function compute(){
+    ITEMS.forEach(it=>{
+      let r; try { r = it.eval(); } catch(e){ r = { sum:'error', st:'missing', msg:String(e.message||e) }; }
+      if (it.link==='switch' && mode[it.id]==='frozen'){
+        // consumers read the snapshot: compare it with the live source
+        const frozenKey = it.id; let liveNow = r.sum;
+        const was = state[it.id] && state[it.id].frozenSum;
+        r.frozenSum = was!=null ? was : r.sum;
+        if (r.frozenSum!==liveNow){ r.st = 'stale'; r.msg = `Consumers use the frozen copy (${r.frozenSum}); the source now has ${liveNow}.`; r.act = 'refresh'; r.actLabel = 'Refresh snapshot'; }
+      }
+      state[it.id] = r;
+      const old = prev[it.id];
+      if (old!=null && old!==r.sum) logEv(it, `${it.label}: ${old} → ${r.sum}`);
+      prev[it.id] = r.sum;
+    });
+  }
+  function worst(list){ return list.reduce((w,i)=> (SEV[state[i.id].st]>SEV[w]?state[i.id].st:w), 'planned'); }
+  function render(){
+    const sh = $('flowSheet'); if (!sh) return;
+    const frozen = Object.keys(mode).filter(k=>mode[k]==='frozen').length;
+    const cnt = st=>ITEMS.filter(i=>state[i.id] && state[i.id].st===st).length;
+    let h = `<div style="width:1180px;max-width:100%;margin:0 auto;padding:14px 16px 24px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px;"><h3 style="margin:0;font-size:16px;">Data Flow</h3>
+        ${['ok','mismatch','stale','missing','planned'].map(st=>cnt(st)?`<span style="font-size:11.5px;border:1px solid var(--border);border-radius:10px;padding:2px 9px;"><span style="color:${COL[st]};">●</span> ${cnt(st)} ${LBL[st].toLowerCase()}</span>`:'').join('')}
+      </div>
+      <div class="modal-hint">How the tabs share data: Project Details feeds every tab, Casing Design feeds Drill String, Well Drilling and Well Testing. Links marked <b>Live</b> always use the latest source value; <b>Frozen</b> keeps consumers on a snapshot until you refresh it (freezes are not saved with the project).</div>
+      <div class="pd-card" style="margin-top:8px;"><div class="pd-ch">Who feeds whom</div><div class="pd-cb"><table class="pd-t" style="text-align:center;"><thead><tr><th style="text-align:left;width:150px;">From ↓ / To →</th>${TABS.map(t=>`<th>${t[0]}<div style="font-weight:400;font-size:10px;color:var(--text-muted);">${t[1]}</div></th>`).join('')}</tr></thead><tbody>`;
+    TABS.forEach(a=>{ h += `<tr><td style="text-align:left;font-size:12px;"><b>${a[0]}</b> <span style="color:var(--text-muted);">${a[1]}</span></td>`;
+      TABS.forEach(b=>{ const L = ITEMS.filter(i=>i.src===a[0] && i.cons.includes(b[0])); if (a[0]===b[0] || !L.length){ h += '<td style="color:var(--text-muted);">'+(a[0]===b[0]?'':'·')+'</td>'; return; }
+        const w = worst(L); h += `<td title="${esc(L.map(i=>i.label).join('\n'))}"><span style="display:inline-block;min-width:34px;padding:3px 8px;border-radius:10px;border:1.5px ${w==='planned'?'dashed':'solid'} ${COL[w]};color:${COL[w]};font-weight:700;font-size:12px;">${L.length}</span></td>`; });
+      h += '</tr>'; });
+    h += `</tbody></table><div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Number = shared items on that link. Green in sync · amber needs a look · grey missing data · dashed = planned, not connected yet. Hover a cell to see the items.</div></div></div>
+      <div class="pd-card" style="margin-top:14px;"><div class="pd-ch">Shared items</div><div class="pd-cb" style="overflow:auto;"><table class="pd-t pd-ct" style="min-width:900px;"><thead><tr><th></th><th>Item</th><th>From → to</th><th>Value now</th><th>Link</th><th>Status / action</th></tr></thead><tbody>`;
+    ITEMS.forEach(it=>{ const r = state[it.id]; if (!r) return;
+      const ctl = it.link==='switch'
+        ? `<div style="display:inline-flex;border:1px solid var(--border);border-radius:5px;overflow:hidden;">${['live','frozen'].map(m=>`<button class="ghost" data-fl="${it.id}" data-m="${m}" style="width:auto;padding:3px 10px;border:0;border-radius:0;${mode[it.id]===m?'background:var(--accent);color:#111;font-weight:700;':''}">${m==='live'?'Live':'Frozen'}</button>`).join('')}</div>`
+        : `<span style="color:var(--text-muted);font-size:11.5px;">${{fixed:'Live (always)',snapshot:'Copy – updated by button',manual:'Manual',planned:'–'}[it.link]}</span>`;
+      h += `<tr><td style="color:${COL[r.st]};font-size:16px;" title="${LBL[r.st]}">${r.st==='planned'?'○':'●'}</td><td style="font-size:12px;">${esc(it.label)}</td><td style="white-space:nowrap;font-size:11.5px;"><b>${it.src}</b> → ${it.cons.join(', ')}</td><td style="font-size:11.5px;">${esc(r.sum)}</td><td>${ctl}</td>
+        <td style="font-size:11.5px;"><span style="color:${COL[r.st]};font-weight:700;">${LBL[r.st]}</span>${r.msg?' – '+esc(r.msg):''}${r.act?` <button class="ghost" data-fa="${r.act}" data-id="${it.id}" style="width:auto;padding:2px 9px;margin-left:6px;">${esc(r.actLabel)}</button>`:''}</td></tr>`; });
+    h += `</tbody></table></div></div>
+      <div class="pd-card" style="margin-top:14px;"><div class="pd-ch">Live change log</div><div class="pd-cb" style="max-height:260px;overflow:auto;">${log.length ? `<table class="pd-t pd-ct"><tbody>${log.slice(0,60).map(e=>`<tr><td style="width:80px;color:var(--text-muted);white-space:nowrap;">${new Date(e.t).toLocaleTimeString()}</td><td><b>${e.item.src}</b></td><td>${esc(e.text)}</td></tr>`).join('')}</tbody></table>` : '<div style="color:var(--text-muted);font-size:12px;padding:6px;">No changes yet. Edit data in any tab and the change appears here as it happens.</div>'}</div></div></div>`;
+    sh.innerHTML = h;
+  }
+  function tabBadge(){ const n = Object.keys(mode).filter(k=>mode[k]==='frozen').length, t = $('tabFlow'); if (t) t.textContent = 'Data Flow' + (n ? ` ● ${n} frozen` : ''); if (t) t.style.color = n ? '#E8A33D' : ''; }
+  function tick(force){
+    try { compute(); } catch(e){}
+    const sig = JSON.stringify(ITEMS.map(i=>[state[i.id]&&state[i.id].sum, state[i.id]&&state[i.id].st, mode[i.id]])) + log.length;
+    if (sig!==lastSig || force){ lastSig = sig; if ($('flowSheet') && $('flowSheet').style.display!=='none') render(); tabBadge(); }
+  }
+  const sheet = document.createElement('div'); sheet.id = 'flowSheet'; sheet.style.cssText = 'display:none;flex:1;min-height:0;overflow:auto;background:var(--panel);';
+  document.body.appendChild(sheet);
+  sheet.addEventListener('click', e=>{
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.fl){ const id = b.dataset.fl, m = b.dataset.m; if (mode[id]===m) return;
+      if (m==='frozen'){ take(id); mode[id] = 'frozen'; delete (state[id]||{}).frozenSum; } else { mode[id] = 'live'; release(id); delete (state[id]||{}).frozenSum; }
+      const it = ITEMS.find(i=>i.id===id); logEv(it, `${it.label}: link set to ${m==='frozen'?'Frozen (snapshot taken)':'Live'}`); tick(true); return; }
+    if (b.dataset.fa==='refresh'){ const id = b.dataset.id; take(id); delete (state[id]||{}).frozenSum; const it = ITEMS.find(i=>i.id===id); logEv(it, `${it.label}: snapshot refreshed`); tick(true); }
+    else if (b.dataset.fa==='fixtd'){ const p = num(pdv().td); if (p==null) return;
+      const c = $('totalDepth'); if (c){ c.value = p; c.dispatchEvent(new Event('change',{bubbles:true})); }
+      const d = $('dsTotalDepth'); if (d){ d.value = p; d.dispatchEvent(new Event('change',{bubbles:true})); }
+      logEv(ITEMS.find(i=>i.id==='td'), `Total depth set to ${p} m in Casing Design and Drill String Design`); tick(true); }
+    else if (b.dataset.fa==='dsdupdate'){ const x = $('dsExportCasing'); if (x) x.click(); setTimeout(()=>tick(true), 50); }
+  });
+  window.__flowOpen = ()=> tick(true);
+  window.__flowState = ()=>({ mode: clone(mode), items: ITEMS.map(i=>({ id:i.id, st:state[i.id]&&state[i.id].st, sum:state[i.id]&&state[i.id].sum })), log: log.length });
+  setInterval(tick, 1000); tick(true);
 })();
 </script>
 </body>
