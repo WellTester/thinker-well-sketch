@@ -7142,7 +7142,7 @@ window.splitDepthEditor = function(textEl, current, onCommit){
   window.__fname = function(prefix, well, td){
     const now = new Date();
     const dateStr = String(now.getDate()).padStart(2,'0') + String(now.getMonth()+1).padStart(2,'0') + String(now.getFullYear()).slice(-2);
-    const w = String(well||'Well').trim().replace(/[^a-z0-9\-_]+/gi,'_').replace(/^_+|_+$/g,'') || 'Well';
+    const w = String((window.__wellName && window.__wellName()) || well || 'Well').trim().replace(/[^a-z0-9\-_]+/gi,'_').replace(/^_+|_+$/g,'') || 'Well';
     const t = (td!=null && td!=='' && isFinite(+td)) ? String(Math.round(+td*10)/10) : 'TD';
     return `${prefix}_${w}_${t}_${dateStr}`;
   };
@@ -21508,6 +21508,21 @@ window.splitDepthEditor = function(textEl, current, onCommit){
   let pd = { custom: [], changes: [] };
   let snap = null, showAll = false;
   window.__pdGet = ()=> JSON.parse(JSON.stringify(pd));
+  // Well name of every tab follows Project Details > Well (the tab inputs become read-only mirrors while it is filled in)
+  const WELL_INPUTS = ['wellName','dsWellName','dstWellName','drlWell','bopWellName'];
+  function syncWellNames(){
+    const w = (pd.well||'').toString().trim();
+    WELL_INPUTS.forEach(id=>{
+      const el = document.getElementById(id); if (!el) return;
+      if (w){
+        if (el.value !== w){ el.value = w; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); }
+        if (!el.readOnly){ el.readOnly = true; el.style.opacity = '0.85'; el.style.cursor = 'not-allowed'; el.title = 'Well name is taken from Project Details (Well)'; }
+      } else if (el.readOnly){ el.readOnly = false; el.style.opacity = ''; el.style.cursor = ''; el.title = ''; }
+    });
+  }
+  window.__wellName = ()=> (pd.well||'').toString().trim();
+  window.__syncWellNames = syncWellNames;
+  setInterval(syncWellNames, 400);
   // RKB elevation above mean sea level: offshore = air gap; onshore = the entered RKB elevation, else ground level + air gap
   function rkbElev(){
     const off = (pd.config||'offshore')==='offshore', ag = num(pd.airgap), gl = num(pd.gl), rk = num(pd.rkb);
@@ -21946,13 +21961,13 @@ window.splitDepthEditor = function(textEl, current, onCommit){
   window.__pdRefreshViews = ()=>{ try { refreshSchematic(); } catch(e){} };
   body.addEventListener('input', e=>{
     const t = e.target;
-    if (t.dataset.pd){ pd[t.dataset.pd] = t.value; if (NUM.includes(t.dataset.pd)) refreshSchematic(); if (MAPK.includes(t.dataset.pd)) mapUpdate(t.dataset.pd!=='well'); }
+    if (t.dataset.pd){ pd[t.dataset.pd] = t.value; if (t.dataset.pd==='well') syncWellNames(); if (NUM.includes(t.dataset.pd)) refreshSchematic(); if (MAPK.includes(t.dataset.pd)) mapUpdate(t.dataset.pd!=='well'); }
     else if (t.dataset.pdc){ const c = pd.custom[+t.dataset.i]; if (c) c[t.dataset.pdc] = t.value; }
     else if (t.dataset.pdp){ const r = (pd.pressures||[])[+t.dataset.i]; if (r){ const f = t.dataset.pdp; r[f] = (f==='pore'||f==='frac') ? fromDisp(t.value) : t.value; refreshPressures(false); } }
   });
   body.addEventListener('change', e=>{
     const t = e.target;
-    if (t.dataset.pd){ pd[t.dataset.pd] = t.value; if (MAPK.includes(t.dataset.pd)) mapUpdate(t.dataset.pd!=='well'); }
+    if (t.dataset.pd){ pd[t.dataset.pd] = t.value; if (t.dataset.pd==='well') syncWellNames(); if (MAPK.includes(t.dataset.pd)) mapUpdate(t.dataset.pd!=='well'); }
     else if (t.dataset.pdr){ pd[t.dataset.pdr] = t.value; if (t.dataset.pdr==='config'){ pd.unitType = ''; build(); } }
     else if (t.dataset.pdc2) pd[t.dataset.pdc2] = t.checked;
     else if (t.dataset.pdu){ pd.pUnit = t.value; refreshPressures(true); }
